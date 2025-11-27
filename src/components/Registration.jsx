@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Check, Trophy, Bike } from 'lucide-react';
 import Navbar from './Navbar';
-import API_URL from './api'; // Importação da API
+import API_URL from '../api'; // Importação da API
 
 const CATEGORIES = [
   "50cc", "65cc", "Feminino", "Free Force One", "Importada Amador", 

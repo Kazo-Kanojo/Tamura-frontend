@@ -3,7 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import Navbar from './Navbar';
 import Footer from './Footer';
 import { User, Lock, ArrowRight, LogIn } from 'lucide-react';
-import API_URL from './api'; // Importação da API
+import API_URL from '../api'; // Importação da API
 
 const Login = () => {
   const navigate = useNavigate();

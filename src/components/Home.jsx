@@ -4,7 +4,7 @@ import Navbar from "./Navbar";
 import EventCard from "./EventCard";
 import Footer from "./Footer";
 import { Timer, Award, Users, CheckCircle, Phone, Mail, MapPin } from "lucide-react";
-import API_URL from "./api"; // Importação da API
+import API_URL from "../api"; // Importação da API
 
 const Home = () => {
   const [events, setEvents] = useState([]);

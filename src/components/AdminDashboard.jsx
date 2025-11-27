@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
-import API_URL from './api';
+import API_URL from '../api';
 
 const VELOCROSS_CATEGORIES = [
   "50cc", "65cc", "Feminino", "Free Force One", "Importada Amador", 
