@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import Navbar from './Navbar';
 import Footer from './Footer';
 import { User, Lock, ArrowRight, LogIn } from 'lucide-react';
+import API_URL from './api'; // Importação da API
 
 const Login = () => {
   const navigate = useNavigate();
@@ -33,7 +34,7 @@ const Login = () => {
     setLoading(true);
 
     const endpoint = isLogin ? '/login' : '/register';
-    const url = `http://localhost:3000${endpoint}`;
+    const url = `${API_URL}${endpoint}`; // URL Dinâmica
 
     try {
       const response = await fetch(url, {
@@ -48,7 +49,6 @@ const Login = () => {
 
       if (isLogin) {
         localStorage.setItem('user', JSON.stringify(data));
-        
         if (data.role === 'admin') {
             navigate('/admin');
         } else {
@@ -107,7 +107,6 @@ const Login = () => {
                   <input type="password" name="password" required placeholder="******" className="w-full bg-[#0a0a0a] border border-gray-700 rounded-lg py-3 pl-10 pr-4 text-gray-200 focus:border-[#D80000] focus:outline-none" value={formData.password} onChange={handleChange} />
                 </div>
                 
-                {/* CORREÇÃO AQUI: className em vez de class */}
                 {isLogin && (
                     <div className="text-right mt-2">
                         <Link to="/forgot-password" className="text-xs text-gray-500 hover:text-[#D80000] transition">Esqueceu a senha?</Link>

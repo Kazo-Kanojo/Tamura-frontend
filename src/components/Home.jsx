@@ -4,13 +4,13 @@ import Navbar from "./Navbar";
 import EventCard from "./EventCard";
 import Footer from "./Footer";
 import { Timer, Award, Users, CheckCircle, Phone, Mail, MapPin } from "lucide-react";
+import API_URL from "./api"; // Importação da API
 
 const Home = () => {
   const [events, setEvents] = useState([]);
 
-  // Busca os eventos reais do Backend
   useEffect(() => {
-    fetch('http://localhost:3000/api/stages') 
+    fetch(`${API_URL}/api/stages`) // URL Dinâmica
       .then(res => res.json())
       .then(data => setEvents(data))
       .catch(err => console.error("Erro ao buscar eventos:", err));
@@ -20,17 +20,14 @@ const Home = () => {
     <div className="min-h-screen bg-[#0a0a0a] text-white font-sans selection:bg-[#D80000] selection:text-white flex flex-col">
       <Navbar />
 
-      {/* =========================================
-          SEÇÃO 1: HERO (BANNER PRINCIPAL)
-         ========================================= */}
+      {/* SEÇÃO 1: HERO */}
       <div className="relative bg-[#0a0a0a] border-b-4 border-[#D80000] overflow-hidden h-[600px] flex items-center">
         <div className="absolute inset-0 z-0 opacity-40">
-           {/* CORREÇÃO: Caminho absoluto para a pasta public */}
            <img 
             src="/bgLandPage.jpeg" 
             className="w-full h-full object-cover grayscale" 
             alt="Fundo Motocross"
-            onError={(e) => { e.target.src = "https://images.unsplash.com/photo-1517649763962-0c623066013b?q=80&w=2070&auto=format&fit=crop"; }} // Fallback se a imagem não existir
+            onError={(e) => { e.target.src = "https://images.unsplash.com/photo-1517649763962-0c623066013b?q=80&w=2070&auto=format&fit=crop"; }}
            />
         </div>
         <div className="absolute inset-0 z-10 bg-gradient-to-t from-[#0a0a0a] via-transparent to-[#0a0a0a]/80"></div>
@@ -52,9 +49,7 @@ const Home = () => {
         </div>
       </div>
 
-      {/* =========================================
-          SEÇÃO 2: PRÓXIMAS ETAPAS
-         ========================================= */}
+      {/* SEÇÃO 2: PRÓXIMAS ETAPAS */}
       <div className="container mx-auto px-4 py-16">
         <div className="flex items-center gap-4 mb-10">
           <div className="w-2 h-10 bg-[#D80000]"></div>
@@ -69,12 +64,10 @@ const Home = () => {
               <Link to={`/event/${event.id}/register`} key={event.id} className="block group">
                 <EventCard 
                   title={event.name}
-                  // Formata a data para ficar mais amigável
-                  date={new Date(event.date).toLocaleDateString('pt-BR')} 
+                  date={new Date(event.date + 'T12:00:00').toLocaleDateString('pt-BR')} 
                   location={event.location}
                   price="Inscrições Abertas" 
-                  // MELHORIA: Usa a imagem cadastrada no Admin ou uma padrão
-                  image={event.image_url ? `http://localhost:3000${event.image_url}` : "/bgEvent.jpg"} 
+                  image={event.image_url ? `${API_URL}${event.image_url}` : "/bgEvent.jpg"} // URL Dinâmica na Imagem
                 />
               </Link>
             ))}
@@ -86,12 +79,9 @@ const Home = () => {
         )}
       </div>
 
-      {/* =========================================
-          SEÇÃO 3: SOBRE A TAMURA
-         ========================================= */}
+      {/* SEÇÃO 3: SOBRE */}
       <div id="sobre" className="py-20 bg-[#0a0a0a] border-t border-gray-900">
         <div className="container mx-auto px-4">
-          {/* Título da Seção */}
           <div className="text-center mb-16">
             <h2 className="text-4xl font-black italic uppercase tracking-tighter">
               Sobre a <span className="text-[#D80000]">Tamura Eventos</span>
@@ -99,7 +89,6 @@ const Home = () => {
             <div className="w-24 h-1 bg-[#D80000] mx-auto mt-4"></div>
           </div>
 
-          {/* História e Missão */}
           <div className="flex flex-col md:flex-row items-center gap-12 mb-20">
             <div className="w-full md:w-1/2 relative group">
               <div className="absolute -inset-2 bg-[#D80000] rounded-lg opacity-20 group-hover:opacity-40 transition duration-500 blur-lg"></div>
@@ -132,7 +121,6 @@ const Home = () => {
             </div>
           </div>
 
-          {/* Cronometragem (Destaque) */}
           <div className="bg-[#1a1a1a] rounded-2xl p-10 border border-gray-800 relative overflow-hidden">
              <div className="absolute -right-10 -top-10 opacity-5 pointer-events-none">
                 <Timer size={300} />
@@ -161,9 +149,7 @@ const Home = () => {
         </div>
       </div>
 
-      {/* =========================================
-          SEÇÃO 4: CONTATO
-         ========================================= */}
+      {/* SEÇÃO 4: CONTATO */}
       <div id="contato" className="py-20 bg-[#050505] border-t border-gray-900">
         <div className="container mx-auto px-4">
             <div className="text-center mb-16">
@@ -174,8 +160,6 @@ const Home = () => {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                
-                {/* Card 1: WhatsApp */}
                 <a href="https://wa.me/5511947628294" target="_blank" rel="noreferrer" className="bg-[#111] p-8 rounded-xl border border-gray-800 hover:border-[#D80000] group transition text-center flex flex-col items-center">
                     <div className="bg-[#D80000]/10 p-4 rounded-full mb-4 group-hover:bg-[#D80000] transition">
                         <Phone className="w-8 h-8 text-[#D80000] group-hover:text-white" />
@@ -184,7 +168,6 @@ const Home = () => {
                     <p className="text-gray-400 mt-2">(11) 94762-8294</p>
                 </a>
 
-                {/* Card 2: Email */}
                 <a href="mailto:10tamura@gmail.com" className="bg-[#111] p-8 rounded-xl border border-gray-800 hover:border-[#D80000] group transition text-center flex flex-col items-center">
                     <div className="bg-[#D80000]/10 p-4 rounded-full mb-4 group-hover:bg-[#D80000] transition">
                         <Mail className="w-8 h-8 text-[#D80000] group-hover:text-white" />
@@ -193,7 +176,6 @@ const Home = () => {
                     <p className="text-gray-400 mt-2">10tamura@gmail.com</p>
                 </a>
 
-                {/* Card 3: Localização */}
                 <div className="bg-[#111] p-8 rounded-xl border border-gray-800 hover:border-[#D80000] group transition text-center flex flex-col items-center">
                     <div className="bg-[#D80000]/10 p-4 rounded-full mb-4 group-hover:bg-[#D80000] transition">
                         <MapPin className="w-8 h-8 text-[#D80000] group-hover:text-white" />
@@ -201,7 +183,6 @@ const Home = () => {
                     <h3 className="font-bold text-lg uppercase italic text-white">Onde Estamos</h3>
                     <p className="text-gray-400 mt-2">Itatiba - SP</p>
                 </div>
-
             </div>
         </div>
       </div>

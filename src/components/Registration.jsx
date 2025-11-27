@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Check, Trophy, Bike, DollarSign } from 'lucide-react';
+import { ArrowLeft, Check, Trophy, Bike } from 'lucide-react';
 import Navbar from './Navbar';
+import API_URL from './api'; // Importação da API
 
 const CATEGORIES = [
   "50cc", "65cc", "Feminino", "Free Force One", "Importada Amador", 
@@ -17,13 +18,14 @@ const Registration = () => {
   
   const [event, setEvent] = useState(null);
   const [plans, setPlans] = useState([]); 
+  const [batchName, setBatchName] = useState('');
   const [selectedPlan, setSelectedPlan] = useState(null);
   const [selectedCategories, setSelectedCategories] = useState([]);
   const [loading, setLoading] = useState(false);
 
   const user = JSON.parse(localStorage.getItem('user'));
 
-  // --- TOKEN HELPER ---
+  // Helper de Token
   const getAuthHeader = () => ({ 'Content-Type': 'application/json', 'Authorization': `Bearer ${user?.token}` });
 
   useEffect(() => {
@@ -33,7 +35,8 @@ const Registration = () => {
         return;
     }
 
-    fetch('http://localhost:3000/api/stages')
+    // Buscar Etapas
+    fetch(`${API_URL}/api/stages`)
       .then(res => res.json())
       .then(stages => {
         const currentStage = stages.find(s => s.id == id);
@@ -46,9 +49,13 @@ const Registration = () => {
       })
       .catch(err => console.error("Erro ao carregar etapas:", err));
 
-    fetch('http://localhost:3000/api/plans')
+    // Buscar Preços Específicos da Etapa
+    fetch(`${API_URL}/api/stages/${id}/prices`)
       .then(res => res.json())
-      .then(data => setPlans(data))
+      .then(data => {
+          setPlans(data.plans);
+          setBatchName(data.batch_name);
+      })
       .catch(err => console.error("Erro ao carregar planos:", err));
 
   }, [id, navigate, user]);
@@ -87,8 +94,7 @@ const Registration = () => {
     };
 
     try {
-      // AGORA COM HEADER DE AUTORIZAÇÃO
-      const response = await fetch('http://localhost:3000/api/registrations', {
+      const response = await fetch(`${API_URL}/api/registrations`, {
         method: 'POST',
         headers: getAuthHeader(),
         body: JSON.stringify(registrationData)
@@ -118,9 +124,24 @@ const Registration = () => {
 
       <div className="max-w-5xl mx-auto p-6 pt-12">
         <button onClick={() => navigate('/dashboard')} className="flex items-center text-gray-400 hover:text-white mb-8 transition"><ArrowLeft size={20} className="mr-2"/> Cancelar Inscrição</button>
+        
         <div className="flex flex-col md:flex-row justify-between items-end border-b border-gray-800 pb-6 mb-10 gap-4">
-          <div><h1 className="text-4xl font-black italic uppercase tracking-tighter text-white">Inscrição <span className="text-[#D80000]">Confirmada</span></h1><div className="flex items-center gap-3 mt-2 text-gray-300 text-lg"><Trophy size={20} className="text-[#D80000]" /><span className="font-bold">{event.name}</span><span className="text-gray-600">|</span><span>{event.location}</span><span className="text-gray-600">|</span><span>{new Date(event.date + 'T12:00:00').toLocaleDateString('pt-BR')}</span></div></div>
-          <div className="text-right"><p className="text-gray-500 text-xs uppercase font-bold">Piloto</p><p className="text-xl font-bold">{user.name} <span className="text-[#D80000]">#{user.bike_number}</span></p></div>
+          <div>
+            <span className="text-yellow-500 font-bold uppercase tracking-widest text-xs mb-2 block">{batchName || 'Inscrições Abertas'}</span>
+            <h1 className="text-4xl font-black italic uppercase tracking-tighter text-white">Inscrição <span className="text-[#D80000]">Confirmada</span></h1>
+            <div className="flex items-center gap-3 mt-2 text-gray-300 text-lg">
+              <Trophy size={20} className="text-[#D80000]" />
+              <span className="font-bold">{event.name}</span>
+              <span className="text-gray-600">|</span>
+              <span>{event.location}</span>
+              <span className="text-gray-600">|</span>
+              <span>{new Date(event.date + 'T12:00:00').toLocaleDateString('pt-BR')}</span>
+            </div>
+          </div>
+          <div className="text-right">
+             <p className="text-gray-500 text-xs uppercase font-bold">Piloto</p>
+             <p className="text-xl font-bold">{user.name} <span className="text-[#D80000]">#{user.bike_number}</span></p>
+          </div>
         </div>
 
         <section className="mb-12">

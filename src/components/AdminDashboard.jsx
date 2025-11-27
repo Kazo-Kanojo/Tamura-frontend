@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
+import API_URL from './api';
 
 const VELOCROSS_CATEGORIES = [
   "50cc", "65cc", "Feminino", "Free Force One", "Importada Amador", 
@@ -118,7 +119,7 @@ const AdminDashboard = () => {
 
   const fetchStages = async () => {
     try {
-      const response = await fetch('http://localhost:3000/api/stages');
+      const response = await fetch(`${API_URL}/api/stages`);
       setStages(await response.json());
     } catch (error) { console.error(error); }
   };
@@ -136,7 +137,7 @@ const AdminDashboard = () => {
     if (imageFile) dataToSend.append('image', imageFile);
 
     try {
-      let url = formData.id ? `http://localhost:3000/api/stages/${formData.id}` : 'http://localhost:3000/api/stages';
+      let url = formData.id ? `${API_URL}/api/stages/${formData.id}` : '${API_URL}/api/stages';
       let method = formData.id ? 'PUT' : 'POST';
       
       const res = await fetch(url, { 
@@ -157,7 +158,7 @@ const AdminDashboard = () => {
     if (!window.confirm("Isso apagará todas as inscrições e resultados!")) return;
     setLoading(true);
     try {
-        const res = await fetch(`http://localhost:3000/api/stages/${id}`, { 
+        const res = await fetch(`${API_URL}/api/stages/${id}`, { 
             method: 'DELETE',
             headers: getAuthHeaders()
         });
@@ -176,7 +177,7 @@ const AdminDashboard = () => {
   const fetchUsers = async () => {
     setLoading(true);
     try {
-        const res = await fetch('http://localhost:3000/api/users', {
+        const res = await fetch('${API_URL}/api/users', {
             headers: getAuthHeaders()
         });
         if(res.ok) setUsersList(await res.json());
@@ -191,7 +192,7 @@ const AdminDashboard = () => {
   const handleSaveUser = async (e) => {
       e.preventDefault(); setLoading(true);
       try {
-          const res = await fetch(`http://localhost:3000/api/users/${userForm.id}`, { 
+          const res = await fetch(`${API_URL}/api/users/${userForm.id}`, { 
               method: 'PUT', 
               headers: getAuthHeaders(), 
               body: JSON.stringify(userForm)
@@ -202,7 +203,7 @@ const AdminDashboard = () => {
   const handleDeleteUser = async (id) => {
       if(!window.confirm("Tem certeza?")) return;
       try { 
-          await fetch(`http://localhost:3000/api/users/${id}`, { 
+          await fetch(`${API_URL}/api/users/${id}`, { 
               method: 'DELETE',
               headers: getAuthHeaders()
           }); 
@@ -211,11 +212,11 @@ const AdminDashboard = () => {
   };
 
   // --- PONTUAÇÃO ---
-  const fetchCategoryStatus = async (stageId) => { try { const r = await fetch(`http://localhost:3000/api/stages/${stageId}/categories-status`); setUploadedCategories(await r.json()); } catch (e) {} };
+  const fetchCategoryStatus = async (stageId) => { try { const r = await fetch(`${API_URL}/api/stages/${stageId}/categories-status`); setUploadedCategories(await r.json()); } catch (e) {} };
   const fetchCategoryResults = async (stageId, category) => { 
       setLoading(true); 
       try { 
-          const r = await fetch(`http://localhost:3000/api/stages/${stageId}/results/${encodeURIComponent(category)}`); 
+          const r = await fetch(`${API_URL}/api/stages/${stageId}/results/${encodeURIComponent(category)}`); 
           const d = await r.json(); 
           setCategoryResults(d); 
           setIsReplacing(d.length === 0); 
@@ -225,7 +226,7 @@ const AdminDashboard = () => {
     const file = event.target.files[0]; if (!file) return;
     const uploadData = new FormData(); uploadData.append('file', file); setLoading(true);
     try {
-      const res = await fetch(`http://localhost:3000/api/stages/${selectedStage.id}/upload/${encodeURIComponent(selectedCategory)}`, { 
+      const res = await fetch(`${API_URL}/api/stages/${selectedStage.id}/upload/${encodeURIComponent(selectedCategory)}`, { 
           method: 'POST', 
           headers: getAuthHeaders(false),
           body: uploadData 
@@ -239,7 +240,7 @@ const AdminDashboard = () => {
   const fetchRegistrations = async (stageId) => {
       setLoading(true);
       try {
-          const res = await fetch(`http://localhost:3000/api/registrations/stage/${stageId}`, {
+          const res = await fetch(`${API_URL}/api/registrations/stage/${stageId}`, {
               headers: getAuthHeaders()
           });
           setRegistrationsList(await res.json());
@@ -249,7 +250,7 @@ const AdminDashboard = () => {
   const togglePaymentStatus = async (reg) => {
       const newStatus = reg.status === 'paid' ? 'pending' : 'paid';
       try {
-          const res = await fetch(`http://localhost:3000/api/registrations/${reg.id}/status`, {
+          const res = await fetch(`${API_URL}/api/registrations/${reg.id}/status`, {
               method: 'PUT', 
               headers: getAuthHeaders(), 
               body: JSON.stringify({ status: newStatus })
@@ -298,7 +299,7 @@ const AdminDashboard = () => {
   // 1. Busca configurações globais (PIX)
   const fetchGlobalSettings = async () => {
       try { 
-          const res = await fetch('http://localhost:3000/api/settings/pix_key'); 
+          const res = await fetch('${API_URL}/api/settings/pix_key'); 
           const data = await res.json(); 
           setPixKey(data.value || '');
       } catch(e) { console.error(e); }
@@ -308,7 +309,7 @@ const AdminDashboard = () => {
   const fetchStagePrices = async (stageId) => {
       setLoading(true);
       try {
-          const res = await fetch(`http://localhost:3000/api/stages/${stageId}/prices`);
+          const res = await fetch(`${API_URL}/api/stages/${stageId}/prices`);
           const data = await res.json();
           setBatchName(data.batch_name); // Lote específico da etapa
           setLocalPlans(data.plans);     // Preços específicos da etapa
@@ -333,7 +334,7 @@ const AdminDashboard = () => {
       setLoading(true);
       try {
           // Salva configurações da etapa
-          await fetch(`http://localhost:3000/api/stages/${selectedStagePlan}/prices`, {
+          await fetch(`${API_URL}/api/stages/${selectedStagePlan}/prices`, {
               method: 'PUT',
               headers: getAuthHeaders(),
               body: JSON.stringify({ 
@@ -343,7 +344,7 @@ const AdminDashboard = () => {
           });
 
           // Salva PIX Global
-          await fetch(`http://localhost:3000/api/settings/pix_key`, {
+          await fetch(`${API_URL}/api/settings/pix_key`, {
               method: 'PUT', 
               headers: getAuthHeaders(), 
               body: JSON.stringify({ value: pixKey })
@@ -360,7 +361,7 @@ const AdminDashboard = () => {
   // --- BACKUP ---
   const handleDownloadBackup = async () => {
       try {
-          const res = await fetch('http://localhost:3000/api/admin/backup', { headers: getAuthHeaders(false) });
+          const res = await fetch('${API_URL}/api/admin/backup', { headers: getAuthHeaders(false) });
           if(res.ok) {
               const blob = await res.blob();
               const url = window.URL.createObjectURL(blob);
@@ -438,7 +439,7 @@ const AdminDashboard = () => {
                   <div key={stage.id} className={`p-4 bg-neutral-900/50 rounded-lg flex flex-col sm:flex-row justify-between items-center border border-neutral-700 ${formData.id===stage.id?'border-yellow-500':''}`}>
                     <div className="flex items-center gap-4 w-full sm:w-auto">
                         <div className="h-12 w-12 rounded bg-neutral-800 overflow-hidden flex-shrink-0 border border-neutral-700">
-                             {stage.image_url ? <img src={`http://localhost:3000${stage.image_url}`} className="w-full h-full object-cover"/> : <div className="w-full h-full flex items-center justify-center text-gray-600"><ImageIcon size={20}/></div>}
+                             {stage.image_url ? <img src={`${API_URL}${stage.image_url}`} className="w-full h-full object-cover"/> : <div className="w-full h-full flex items-center justify-center text-gray-600"><ImageIcon size={20}/></div>}
                         </div>
                         <div>
                             <div className="font-bold text-white">{stage.name}</div>
@@ -630,7 +631,7 @@ const AdminDashboard = () => {
                             <label className="text-xs text-green-500 font-bold uppercase flex items-center gap-2 mb-2"><DollarSign size={14}/> Chave PIX (Global)</label>
                             <div className="flex gap-2">
                                 <input className="w-full max-w-md bg-neutral-900 border border-green-600/50 rounded p-3 text-white font-mono outline-none focus:border-green-500" placeholder="Email, CPF ou Telefone" value={pixKey} onChange={(e) => setPixKey(e.target.value)} />
-                                <button onClick={() => fetch(`http://localhost:3000/api/settings/pix_key`, { method: 'PUT', headers: getAuthHeaders(), body: JSON.stringify({ value: pixKey }) }).then(() => showMessage("PIX Salvo!", "success"))} className="bg-green-700 hover:bg-green-600 text-white px-4 rounded font-bold transition">Salvar PIX</button>
+                                <button onClick={() => fetch(`${API_URL}/api/settings/pix_key`, { method: 'PUT', headers: getAuthHeaders(), body: JSON.stringify({ value: pixKey }) }).then(() => showMessage("PIX Salvo!", "success"))} className="bg-green-700 hover:bg-green-600 text-white px-4 rounded font-bold transition">Salvar PIX</button>
                             </div>
                         </div>
                     </div>
