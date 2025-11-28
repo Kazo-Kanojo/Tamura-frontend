@@ -3,7 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import Navbar from './Navbar';
 import Footer from './Footer';
 import { Key, Lock, CheckCircle, AlertCircle, Save } from 'lucide-react';
-
+import API_URL from '../api';
 const ResetPassword = () => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({ token: '', newPassword: '', confirmPassword: '' });
@@ -21,7 +21,7 @@ const ResetPassword = () => {
     setMessage({ text: '', type: '' });
 
     try {
-      const response = await fetch('http://localhost:3000/reset-password', {
+      const response = await fetch(`${API_URL}/reset-password`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ token: formData.token, newPassword: formData.newPassword })

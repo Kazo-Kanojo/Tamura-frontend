@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Trophy, Search, Filter, Calendar } from "lucide-react";
+import API_URL from "../api";
 
 const Standings = () => {
   const categoriesList = [
@@ -18,7 +19,7 @@ const Standings = () => {
   const [viewMode, setViewMode] = useState('overall');
 
   useEffect(() => {
-    fetch('http://localhost:3000/api/stages')
+    fetch(`${API_URL}/api/stages`)
       .then(res => res.json())
       .then(data => setStages(data))
       .catch(err => console.error(err));
@@ -27,8 +28,8 @@ const Standings = () => {
   useEffect(() => {
     setLoading(true);
     const url = viewMode === 'overall' 
-      ? 'http://localhost:3000/api/standings/overall'
-      : `http://localhost:3000/api/stages/${viewMode}/standings`;
+      ? `${API_URL}/api/standings/overall`
+      : `${API_URL}/api/stages/${viewMode}/standings`;
 
     fetch(url)
       .then(res => res.json())

@@ -4,6 +4,7 @@ import Navbar from "./Navbar";
 import Footer from "./Footer";
 import Standings from "./Standings"; 
 import { Calendar, MapPin, PlusCircle, CheckCircle, Trophy, Flag, Cpu, Clock, AlertCircle, Tag, Copy } from "lucide-react";
+import API_URL from "../api";
 
 const UserDashboard = () => {
   const navigate = useNavigate();
@@ -35,7 +36,7 @@ const UserDashboard = () => {
     setLoading(true);
     try {
       // 1. Busca Usuário (Agora Protegido)
-      const userRes = await fetch(`http://localhost:3000/api/users/${userId}`, {
+      const userRes = await fetch(`${API_URL}/api/users/${userId}`, {
           headers: getAuthHeaders(token)
       });
       
@@ -51,21 +52,21 @@ const UserDashboard = () => {
       }
 
       // 2. Busca Etapas (Público)
-      const stagesRes = await fetch('http://localhost:3000/api/stages');
+      const stagesRes = await fetch(`${API_URL}/api/stages`);
       setStages(await stagesRes.json());
 
       // 3. Busca Inscrições (Agora Protegido)
-      const myRegRes = await fetch(`http://localhost:3000/api/registrations/user/${userId}`, {
+      const myRegRes = await fetch(`${API_URL}/api/registrations/user/${userId}`, {
           headers: getAuthHeaders(token)
       });
       setMyRegistrations(await myRegRes.json());
 
       // 4. Configurações (Público)
-      const batchRes = await fetch('http://localhost:3000/api/settings/current_batch');
+      const batchRes = await fetch(`${API_URL}/api/settings/current_batch`);
       const batchData = await batchRes.json();
       setBatchName(batchData.value || '');
 
-      const pixRes = await fetch('http://localhost:3000/api/settings/pix_key');
+      const pixRes = await fetch(`${API_URL}/api/settings/pix_key`);
       const pixData = await pixRes.json();
       setPixKey(pixData.value || '');
 
@@ -151,7 +152,7 @@ const UserDashboard = () => {
                     <div key={stage.id} className={`bg-[#111] border rounded-2xl overflow-hidden transition-all duration-300 group shadow-lg flex flex-col ${isRegistered ? (isPaid ? 'border-green-900/50' : 'border-yellow-900/50') : 'border-gray-800 hover:border-[#D80000]'}`}>
                       <div className="h-48 bg-neutral-900 relative overflow-hidden">
                           {stage.image_url ? (
-                              <img src={`http://localhost:3000${stage.image_url}`} className="w-full h-full object-cover group-hover:scale-110 transition duration-700"/>
+                              <img src={`${API_URL}${stage.image_url}`} className="w-full h-full object-cover group-hover:scale-110 transition duration-700"/>
                           ) : (
                               <div className="w-full h-full bg-neutral-800 flex items-center justify-center text-gray-700"><Trophy size={48}/></div>
                           )}
