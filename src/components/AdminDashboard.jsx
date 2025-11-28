@@ -137,7 +137,7 @@ const AdminDashboard = () => {
     if (imageFile) dataToSend.append('image', imageFile);
 
     try {
-      let url = formData.id ? `${API_URL}/api/stages/${formData.id}` : '${API_URL}/api/stages';
+      let url = formData.id ? `${API_URL}/api/stages/${formData.id}` : `${API_URL}/api/stages`;
       let method = formData.id ? 'PUT' : 'POST';
       
       const res = await fetch(url, { 
@@ -177,7 +177,7 @@ const AdminDashboard = () => {
   const fetchUsers = async () => {
     setLoading(true);
     try {
-        const res = await fetch('${API_URL}/api/users', {
+        const res = await fetch(`${API_URL}/api/users`, {
             headers: getAuthHeaders()
         });
         if(res.ok) setUsersList(await res.json());
@@ -299,7 +299,7 @@ const AdminDashboard = () => {
   // 1. Busca configurações globais (PIX)
   const fetchGlobalSettings = async () => {
       try { 
-          const res = await fetch('${API_URL}/api/settings/pix_key'); 
+          const res = await fetch(`${API_URL}/api/settings/pix_key`); 
           const data = await res.json(); 
           setPixKey(data.value || '');
       } catch(e) { console.error(e); }
@@ -361,7 +361,7 @@ const AdminDashboard = () => {
   // --- BACKUP ---
   const handleDownloadBackup = async () => {
       try {
-          const res = await fetch('${API_URL}/api/admin/backup', { headers: getAuthHeaders(false) });
+          const res = await fetch(`${API_URL}/api/admin/backup`, { headers: getAuthHeaders(false) });
           if(res.ok) {
               const blob = await res.blob();
               const url = window.URL.createObjectURL(blob);
