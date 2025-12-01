@@ -128,7 +128,7 @@ const Registration = () => {
         <div className="flex flex-col md:flex-row justify-between items-end border-b border-gray-800 pb-6 mb-10 gap-4">
           <div>
             <span className="text-yellow-500 font-bold uppercase tracking-widest text-xs mb-2 block">{batchName || 'Inscrições Abertas'}</span>
-            <h1 className="text-4xl font-black italic uppercase tracking-tighter text-white">Escolha sua<span className="text-[#D80000]">Categoria</span></h1>
+            <h1 className="text-4xl font-black italic uppercase tracking-tighter text-white">Escolha sua <span className="text-[#D80000]">Categoria</span></h1>
             <div className="flex items-center gap-3 mt-2 text-gray-300 text-lg">
               <Trophy size={20} className="text-[#D80000]" />
               <span className="font-bold">{event.name}</span>

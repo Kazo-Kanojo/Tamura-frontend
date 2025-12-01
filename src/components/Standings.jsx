@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Trophy, Search, Filter, Calendar } from "lucide-react";
+import { Trophy, Search, Filter } from "lucide-react";
 import API_URL from "../api";
 
 const Standings = () => {
@@ -18,6 +18,7 @@ const Standings = () => {
   const [stages, setStages] = useState([]);
   const [viewMode, setViewMode] = useState('overall');
 
+  // Busca lista de etapas
   useEffect(() => {
     fetch(`${API_URL}/api/stages`)
       .then(res => res.json())
@@ -25,6 +26,7 @@ const Standings = () => {
       .catch(err => console.error(err));
   }, []);
 
+  // Busca dados do ranking (Geral ou Etapa)
   useEffect(() => {
     setLoading(true);
     const url = viewMode === 'overall' 
@@ -39,10 +41,18 @@ const Standings = () => {
         data.forEach(record => {
           const catKey = categoriesList.find(c => c.toLowerCase() === record.category.trim().toLowerCase()) || record.category;
           if (!grouped[catKey]) grouped[catKey] = [];
+          
+          // Armazena todos os dados necessários
           grouped[catKey].push({
+            pos: record.position, // Posição na corrida (apenas para Etapa)
             name: record.pilot_name,
             number: record.pilot_number,
-            points: record.total_points
+            points: record.points || record.total_points,
+            // Dados detalhados da corrida
+            laps: record.laps,
+            total_time: record.total_time,
+            diff_first: record.diff_first,
+            best_lap: record.best_lap
           });
         });
         setRankings(grouped);
@@ -58,6 +68,7 @@ const Standings = () => {
 
   return (
     <div className="w-full bg-[#111] rounded-xl border border-gray-800 overflow-hidden shadow-2xl">
+      {/* HEADER */}
       <div className="p-6 md:p-8 bg-gradient-to-r from-[#1a1a1a] to-[#0a0a0a] border-b border-gray-800">
         <div className="flex flex-col gap-6">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -100,6 +111,8 @@ const Standings = () => {
           </div>
         </div>
       </div>
+
+      {/* SELETOR DE CATEGORIAS */}
       <div className="bg-[#151515] border-b border-gray-800 p-2 overflow-x-auto scrollbar-hide">
         <div className="flex gap-2 min-w-max px-2">
           {categoriesList.map(cat => (
@@ -113,31 +126,86 @@ const Standings = () => {
           ))}
         </div>
       </div>
-      <div className="min-h-[300px] bg-[#0a0a0a]">
+
+      {/* TABELA DE RESULTADOS */}
+      <div className="min-h-[300px] bg-[#0a0a0a] overflow-x-auto">
         {loading ? (
           <div className="flex justify-center items-center h-64 text-gray-500">Calculando...</div>
         ) : (
-          <table className="w-full text-left border-collapse">
-            <thead className="bg-[#111] text-gray-500 text-xs uppercase font-bold tracking-widest sticky top-0">
+          <table className="w-full text-left border-collapse whitespace-nowrap">
+            {/* CABEÇALHO (Idêntico ao Admin) */}
+            <thead className="bg-[#111] text-gray-500 text-xs uppercase font-bold tracking-widest sticky top-0 border-b border-gray-800">
               <tr>
                 <th className="p-4 text-center w-20">Pos</th>
-                <th className="p-4 text-center w-24">Nº Moto</th>
-                <th className="p-4">Piloto</th>
-                <th className="p-4 text-center w-24 text-[#D80000] bg-[#D80000]/5">Pts</th>
+                <th className="p-4 text-left">Piloto</th>
+                <th className="p-4 text-center w-24">Nº</th>
+                
+                {/* Colunas extras - SEM CLASSES HIDDEN */}
+                {viewMode !== 'overall' && (
+                  <>
+                    <th className="p-4 text-center">Voltas</th>
+                    <th className="p-4 text-left">Tempo Total</th>
+                    <th className="p-4 text-left">Dif. Líder</th>
+                    <th className="p-4 text-left">Melhor Volta</th>
+                  </>
+                )}
+
+                <th className="p-4 text-center w-24 text-[#D80000] bg-[#D80000]/5">PTS</th>
               </tr>
             </thead>
+            
+            {/* CORPO DA TABELA */}
             <tbody className="divide-y divide-gray-800 text-sm">
               {filteredPilots.length > 0 ? (
                 filteredPilots.map((pilot, idx) => (
                   <tr key={idx} className="hover:bg-[#1f1f1f] transition-colors group">
-                    <td className="p-4 text-center font-bold text-gray-400 group-hover:text-white">{idx + 1}º</td>
-                    <td className="p-4 text-center"><span className="font-mono font-bold text-[#D80000] bg-[#1a1a1a] px-2 py-1 rounded border border-gray-800">{pilot.number}</span></td>
-                    <td className="p-4 font-bold text-gray-200 group-hover:text-white uppercase">{pilot.name}</td>
-                    <td className="p-4 text-center font-black text-xl text-white bg-[#D80000]/5 group-hover:bg-[#D80000]/10">{pilot.points}</td>
+                    {/* Pos */}
+                    <td className="p-4 text-center font-bold text-gray-400 group-hover:text-white">
+                      {viewMode !== 'overall' && pilot.pos ? `${pilot.pos}º` : `${idx + 1}º`}
+                    </td>
+                    
+                    {/* Piloto */}
+                    <td className="p-4 font-bold text-gray-200 group-hover:text-white uppercase text-left">
+                      {pilot.name}
+                    </td>
+
+                    {/* Nº */}
+                    <td className="p-4 text-center">
+                      <span className="font-mono font-bold text-yellow-500">
+                        {pilot.number}
+                      </span>
+                    </td>
+
+                    {/* Dados Extras - SEM CLASSES HIDDEN */}
+                    {viewMode !== 'overall' && (
+                      <>
+                        <td className="p-4 text-center text-gray-400">
+                            {pilot.laps}
+                        </td>
+                        <td className="p-4 text-left text-gray-400 text-xs">
+                            {pilot.total_time}
+                        </td>
+                        <td className="p-4 text-left text-gray-500 text-xs">
+                            {pilot.diff_first}
+                        </td>
+                        <td className="p-4 text-left text-green-400 text-xs font-mono">
+                            {pilot.best_lap}
+                        </td>
+                      </>
+                    )}
+
+                    {/* PTS */}
+                    <td className="p-4 text-center font-black text-xl text-[#D80000] bg-[#D80000]/5 group-hover:bg-[#D80000]/10">
+                      {pilot.points}
+                    </td>
                   </tr>
                 ))
               ) : (
-                <tr><td colSpan="4" className="p-16 text-center text-gray-600 italic">Nenhuma pontuação.</td></tr>
+                <tr>
+                  <td colSpan={viewMode !== 'overall' ? "8" : "4"} className="p-16 text-center text-gray-600 italic">
+                    Nenhuma pontuação encontrada.
+                  </td>
+                </tr>
               )}
             </tbody>
           </table>
