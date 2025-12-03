@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom'; 
 import { 
   LogOut, Calendar, MapPin, Upload, Plus, Edit3, AlertCircle, CheckCircle, 
-  Check, ArrowLeft, Trash2, RefreshCw, X, ImageIcon, Search, Users, 
-  Shield, Bike, ClipboardList, DollarSign, Wallet, MessageCircle, Tag, Save, Layers, FileText, Download
+  ArrowLeft, Trash2, RefreshCw, X, ImageIcon, Search, Users, 
+  ClipboardList, DollarSign, Wallet, Tag, Save, FileText, Download
 } from 'lucide-react';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
@@ -33,8 +33,10 @@ const AdminDashboard = () => {
   const [usersList, setUsersList] = useState([]);
   const [userSearch, setUserSearch] = useState(''); 
   const [editingUser, setEditingUser] = useState(null); 
+  
+  // Estado do formulário de usuário com birth_date
   const [userForm, setUserForm] = useState({ 
-      id: null, name: '', email: '', phone: '', bike_number: '', chip_id: '', role: 'user' 
+      id: null, name: '', email: '', phone: '', bike_number: '', chip_id: '', role: 'user', birth_date: '' 
   });
 
   // --- ESTADOS DA PONTUAÇÃO ---
@@ -49,12 +51,24 @@ const AdminDashboard = () => {
   const [registrationsList, setRegistrationsList] = useState([]); 
   const [regSearch, setRegSearch] = useState(''); 
 
-  // --- ESTADOS DE PLANOS E CONFIGURAÇÕES (ALTERADO) ---
-  const [selectedStagePlan, setSelectedStagePlan] = useState(null); // Para selecionar qual etapa editar
-  const [plans, setPlans] = useState([]); 
+  // --- ESTADOS DE PLANOS E CONFIGURAÇÕES ---
+  const [selectedStagePlan, setSelectedStagePlan] = useState(null); 
   const [localPlans, setLocalPlans] = useState([]); 
   const [batchName, setBatchName] = useState(''); 
   const [pixKey, setPixKey] = useState(''); 
+
+  // --- HELPER: FORMATAR DATA PARA INPUT (YYYY-MM-DD) ---
+  // Função crucial para converter o objeto Date do Postgres para string do input
+  const formatDateForInput = (dateValue) => {
+    if (!dateValue) return '';
+    try {
+        const date = new Date(dateValue);
+        // Ajusta para string ISO (YYYY-MM-DD)
+        return date.toISOString().split('T')[0];
+    } catch (e) {
+        return '';
+    }
+  };
 
   // --- HELPER: PEGAR TOKEN DO USUÁRIO ---
   const getAuthHeaders = (isJson = true) => {
@@ -83,20 +97,17 @@ const AdminDashboard = () => {
   useEffect(() => { fetchStages(); }, []);
   useEffect(() => { if (activeTab === 'users') fetchUsers(); }, [activeTab]);
   
-  // NOVO: Carrega PIX Global ao entrar na aba, mas não os planos ainda (espera selecionar etapa)
   useEffect(() => { 
       if (activeTab === 'plans') {
           fetchGlobalSettings(); 
-          setSelectedStagePlan(null); // Reseta seleção ao entrar na aba
+          setSelectedStagePlan(null); 
       } 
   }, [activeTab]);
   
-  // Efeitos condicionais
   useEffect(() => { if (selectedStage) fetchCategoryStatus(selectedStage.id); }, [selectedStage]);
   useEffect(() => { if (selectedStage && selectedCategory) fetchCategoryResults(selectedStage.id, selectedCategory); }, [selectedCategory]);
   useEffect(() => { if (selectedStageReg) fetchRegistrations(selectedStageReg.id); }, [selectedStageReg]);
   
-  // NOVO: Carrega preços da etapa específica quando selecionada
   useEffect(() => {
       if (selectedStagePlan) {
           fetchStagePrices(selectedStagePlan);
@@ -173,7 +184,7 @@ const AdminDashboard = () => {
   };
   const resetForm = () => { setFormData({ id: null, name: '', location: '', date: '' }); setImageFile(null); };
 
-  // --- USUÁRIOS ---
+  // --- USUÁRIOS (Refatorado para incluir Data de Nascimento) ---
   const fetchUsers = async () => {
     setLoading(true);
     try {
@@ -184,22 +195,44 @@ const AdminDashboard = () => {
         else if(res.status === 403) handleLogout();
     } catch (error) { console.error(error); } finally { setLoading(false); }
   };
+
   const handleEditUserClick = (user) => {
       setEditingUser(user.id);
-      setUserForm({ id: user.id, name: user.name, email: user.email, phone: user.phone, bike_number: user.bike_number||'', chip_id: user.chip_id||'', role: user.role });
+      setUserForm({ 
+          id: user.id, 
+          name: user.name, 
+          email: user.email, 
+          phone: user.phone, 
+          bike_number: user.bike_number || '', 
+          chip_id: user.chip_id || '', 
+          role: user.role,
+          // Usa a função helper para garantir que a data apareça no input
+          birth_date: formatDateForInput(user.birth_date)
+      });
   };
-  const handleCancelEditUser = () => { setEditingUser(null); setUserForm({ id: null, name: '', email: '', phone: '', bike_number: '', chip_id: '', role: 'user' }); };
+
+  const handleCancelEditUser = () => { 
+      setEditingUser(null); 
+      setUserForm({ id: null, name: '', email: '', phone: '', bike_number: '', chip_id: '', role: 'user', birth_date: '' }); 
+  };
+
   const handleSaveUser = async (e) => {
-      e.preventDefault(); setLoading(true);
+      e.preventDefault(); 
+      setLoading(true);
       try {
           const res = await fetch(`${API_URL}/api/users/${userForm.id}`, { 
               method: 'PUT', 
               headers: getAuthHeaders(), 
               body: JSON.stringify(userForm)
           });
-          if (res.ok) { showMessage("Usuário atualizado!", "success"); setEditingUser(null); fetchUsers(); }
+          if (res.ok) { 
+              showMessage("Usuário atualizado!", "success"); 
+              setEditingUser(null); 
+              fetchUsers(); 
+          }
       } catch (error) { showMessage("Erro.", "error"); } finally { setLoading(false); }
   };
+
   const handleDeleteUser = async (id) => {
       if(!window.confirm("Tem certeza?")) return;
       try { 
@@ -294,9 +327,7 @@ const AdminDashboard = () => {
   const totalReceita = registrationsList.reduce((acc, curr) => acc + (curr.total_price || 0), 0);
   const totalPendente = registrationsList.filter(r => r.status === 'pending').reduce((acc, curr) => acc + (curr.total_price || 0), 0);
 
-  // --- PLANOS E LOTES POR ETAPA (LÓGICA NOVA) ---
-  
-  // 1. Busca configurações globais (PIX)
+  // --- PLANOS E LOTES POR ETAPA ---
   const fetchGlobalSettings = async () => {
       try { 
           const res = await fetch(`${API_URL}/api/settings/pix_key`); 
@@ -305,14 +336,13 @@ const AdminDashboard = () => {
       } catch(e) { console.error(e); }
   };
 
-  // 2. Busca preços da etapa selecionada
   const fetchStagePrices = async (stageId) => {
       setLoading(true);
       try {
           const res = await fetch(`${API_URL}/api/stages/${stageId}/prices`);
           const data = await res.json();
-          setBatchName(data.batch_name); // Lote específico da etapa
-          setLocalPlans(data.plans);     // Preços específicos da etapa
+          setBatchName(data.batch_name); 
+          setLocalPlans(data.plans);     
       } catch (error) { 
           console.error(error); 
           showMessage("Erro ao carregar preços.", "error");
@@ -321,19 +351,16 @@ const AdminDashboard = () => {
       }
   };
 
-  // 3. Atualiza preço no estado local
   const handleLocalPriceChange = (id, newPrice) => {
       setLocalPlans(prev => prev.map(p => p.id === id ? { ...p, price: parseFloat(newPrice) || 0 } : p));
   };
 
-  // 4. Salva tudo (Preços da Etapa + Lote da Etapa + PIX Global)
   const handleSaveStagePrices = async () => {
       if (!selectedStagePlan) return;
       if (!window.confirm("Tem certeza que deseja SALVAR para esta etapa?")) return;
       
       setLoading(true);
       try {
-          // Salva configurações da etapa
           await fetch(`${API_URL}/api/stages/${selectedStagePlan}/prices`, {
               method: 'PUT',
               headers: getAuthHeaders(),
@@ -343,7 +370,6 @@ const AdminDashboard = () => {
               })
           });
 
-          // Salva PIX Global
           await fetch(`${API_URL}/api/settings/pix_key`, {
               method: 'PUT', 
               headers: getAuthHeaders(), 
@@ -543,7 +569,7 @@ const AdminDashboard = () => {
           </div>
         )}
 
-        {/* --- ABA INSCRIÇÕES (COM PDF E BUSCA) --- */}
+        {/* --- ABA INSCRIÇÕES --- */}
         {activeTab === 'registrations' && (
           <div className="animate-fade-in">
              {!selectedStageReg ? (
@@ -610,7 +636,7 @@ const AdminDashboard = () => {
           </div>
         )}
 
-        {/* --- ABA PLANOS E LOTES (LÓGICA NOVA: SELEÇÃO DE ETAPA) --- */}
+        {/* --- ABA PLANOS E LOTES --- */}
         {activeTab === 'plans' && (
             <div className="animate-fade-in">
                 {!selectedStagePlan ? (
@@ -626,7 +652,6 @@ const AdminDashboard = () => {
                             ))}
                         </div>
                         
-                        {/* Área PIX GLOBAL (Visível aqui para facilitar) */}
                         <div className="mt-8 pt-6 border-t border-neutral-700">
                             <label className="text-xs text-green-500 font-bold uppercase flex items-center gap-2 mb-2"><DollarSign size={14}/> Chave PIX (Global)</label>
                             <div className="flex gap-2">
@@ -636,7 +661,6 @@ const AdminDashboard = () => {
                         </div>
                     </div>
                 ) : (
-                    // TELA DE EDIÇÃO DE PREÇOS DA ETAPA
                     <div className="bg-neutral-800 rounded-xl border border-neutral-700 overflow-hidden shadow-2xl">
                         <div className="p-6 border-b border-neutral-700 bg-neutral-900 flex justify-between items-center">
                             <div><h2 className="text-2xl font-black italic uppercase text-white flex items-center gap-2"><Tag className="text-yellow-500" /> Editando: {stages.find(s=>s.id===selectedStagePlan)?.name}</h2></div>
@@ -680,6 +704,18 @@ const AdminDashboard = () => {
                          <div><label className="text-xs text-gray-500 font-bold uppercase">Nome</label><input className="w-full bg-neutral-900 border border-neutral-700 rounded p-2 text-white" value={userForm.name} onChange={e => setUserForm({...userForm, name: e.target.value})} /></div>
                          <div><label className="text-xs text-gray-500 font-bold uppercase">Email</label><input className="w-full bg-neutral-900 border border-neutral-700 rounded p-2 text-white" value={userForm.email} onChange={e => setUserForm({...userForm, email: e.target.value})} /></div>
                          <div><label className="text-xs text-gray-500 font-bold uppercase">Telefone</label><input className="w-full bg-neutral-900 border border-neutral-700 rounded p-2 text-white" value={userForm.phone} onChange={e => setUserForm({...userForm, phone: e.target.value})} /></div>
+                         
+                         {/* CAMPO DE DATA PARA EDIÇÃO */}
+                         <div>
+                             <label className="text-xs text-gray-500 font-bold uppercase text-yellow-500">Data Nasc.</label>
+                             <input 
+                                type="date" 
+                                className="w-full bg-neutral-900 border border-neutral-700 rounded p-2 text-white focus:border-yellow-500" 
+                                value={userForm.birth_date} 
+                                onChange={e => setUserForm({...userForm, birth_date: e.target.value})} 
+                             />
+                         </div>
+
                          <div><label className="text-xs text-gray-500 font-bold uppercase text-yellow-500">Nº Moto</label><input className="w-full bg-neutral-900 border border-yellow-900/50 rounded p-2 text-yellow-500 font-bold" value={userForm.bike_number} onChange={e => setUserForm({...userForm, bike_number: e.target.value})} /></div>
                          <div><label className="text-xs text-gray-500 font-bold uppercase text-blue-400">Chip ID</label><div className="relative"><input className="w-full bg-blue-900/10 border border-blue-900/50 rounded p-2 text-blue-400 font-mono font-bold" value={userForm.chip_id} onChange={e => setUserForm({...userForm, chip_id: e.target.value})} /><div className="absolute right-3 top-2.5 text-blue-500/50 text-xs">TAG</div></div></div>
                          <div><label className="text-xs text-gray-500 font-bold uppercase">Função</label><select className="w-full bg-neutral-900 border border-neutral-700 rounded p-2 text-white" value={userForm.role} onChange={e => setUserForm({...userForm, role: e.target.value})}><option value="user">Piloto</option><option value="admin">Admin</option></select></div>
@@ -706,7 +742,17 @@ const AdminDashboard = () => {
                 </div>
                 <div className="overflow-x-auto">
                    <table className="w-full text-left border-collapse">
-                      <thead><tr className="bg-neutral-900/50 text-gray-400 text-xs uppercase tracking-wider border-b border-neutral-700"><th className="p-4">Piloto</th><th className="p-4 text-center">Nº Moto</th><th className="p-4 text-center text-blue-400">Chip ID</th><th className="p-4 hidden md:table-cell">CPF</th><th className="p-4 text-center">Função</th><th className="p-4 text-right">Ações</th></tr></thead>
+                      <thead>
+                          <tr className="bg-neutral-900/50 text-gray-400 text-xs uppercase tracking-wider border-b border-neutral-700">
+                              <th className="p-4">Piloto</th>
+                              <th className="p-4 text-center">Nº Moto</th>
+                              <th className="p-4 text-center">Ano Nasc.</th>
+                              <th className="p-4 text-center text-blue-400">Chip ID</th>
+                              <th className="p-4 hidden md:table-cell">CPF</th>
+                              <th className="p-4 text-center">Função</th>
+                              <th className="p-4 text-right">Ações</th>
+                          </tr>
+                      </thead>
                       <tbody className="divide-y divide-neutral-700 text-sm text-gray-300">
                          {usersList.length > 0 ? (
                              usersList
@@ -719,13 +765,19 @@ const AdminDashboard = () => {
                                 <tr key={user.id} className={`hover:bg-neutral-700/30 transition group ${editingUser === user.id ? 'bg-yellow-900/10' : ''}`}>
                                     <td className="p-4 font-bold text-white capitalize">{user.name}<div className="text-xs text-gray-500 font-normal lowercase">{user.email}</div></td>
                                     <td className="p-4 text-center"><span className="font-mono font-bold text-yellow-500 bg-yellow-500/10 px-2 py-1 rounded border border-yellow-500/20">{user.bike_number||'-'}</span></td>
+                                    
+                                    {/* LISTAGEM CORRIGIDA */}
+                                    <td className="p-4 text-center font-bold text-gray-300">
+                                        {user.birth_date ? new Date(user.birth_date).getUTCFullYear() : '-'}
+                                    </td>
+
                                     <td className="p-4 text-center">{user.chip_id?(<span className="font-mono text-xs text-blue-400 border border-blue-900 bg-blue-900/20 px-2 py-1 rounded">{user.chip_id}</span>):(<span className="text-xs text-gray-600 italic">--</span>)}</td>
                                     <td className="p-4 text-gray-500 font-mono text-xs hidden md:table-cell">{user.cpf}</td>
                                     <td className="p-4 text-center">{user.role==='admin'?(<span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-red-900/20 text-red-500 border border-red-900/50">ADMIN</span>):(<span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-neutral-700 text-gray-400">PILOTO</span>)}</td>
                                     <td className="p-4 text-right flex justify-end gap-2"><button onClick={() => handleEditUserClick(user)} className="p-2 rounded text-gray-400 hover:text-yellow-400 hover:bg-yellow-400/10"><Edit3 size={16}/></button><button onClick={() => handleDeleteUser(user.id)} className="p-2 rounded text-gray-400 hover:text-red-500 hover:bg-red-500/10"><Trash2 size={16}/></button></td>
                                 </tr>
                              ))
-                         ) : (<tr><td colSpan="6" className="p-12 text-center text-gray-500 italic">{loading?"...":"Nenhum piloto."}</td></tr>)}
+                         ) : (<tr><td colSpan="7" className="p-12 text-center text-gray-500 italic">{loading?"...":"Nenhum piloto."}</td></tr>)}
                       </tbody>
                    </table>
                 </div>

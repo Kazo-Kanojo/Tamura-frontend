@@ -15,39 +15,44 @@ const UserDashboard = () => {
   const [pixKey, setPixKey] = useState('');
   const [loading, setLoading] = useState(true);
   
-  useEffect(() => {
-    const storedUser = localStorage.getItem('user');
-    if (storedUser) {
-      const parsedUser = JSON.parse(storedUser);
-      setUser(parsedUser);
-      fetchData(parsedUser.id, parsedUser.token); // MANDA O TOKEN
-    } else {
-      navigate("/login");
-    }
-  }, [navigate]);
-
   // HELPER DE AUTH
   const getAuthHeaders = (token) => ({
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${token}`
   });
 
-  const fetchData = async (userId, token) => {
+  useEffect(() => {
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) {
+      const parsedUser = JSON.parse(storedUser);
+      setUser(parsedUser);
+      fetchData(parsedUser.id, parsedUser.token, parsedUser); // Passa o objeto inicial
+    } else {
+      navigate("/login");
+    }
+  }, [navigate]);
+
+  const fetchData = async (userId, token, initialUser) => {
     setLoading(true);
+    let currentUserData = initialUser;
+
     try {
-      // 1. Busca Usuário (Agora Protegido)
+      // 1. Busca Detalhes Completos do Usuário (incluindo birth_date)
       const userRes = await fetch(`${API_URL}/api/users/${userId}`, {
           headers: getAuthHeaders(token)
       });
       
       if (userRes.ok) {
           const updatedUser = await userRes.json();
-          setUser(prev => ({ ...prev, ...updatedUser })); 
-          const currentStorage = JSON.parse(localStorage.getItem('user'));
-          // Mantém o token no storage ao atualizar os dados
-          localStorage.setItem('user', JSON.stringify({ ...currentStorage, ...updatedUser }));
+          // Mescla dados do storage com dados frescos do servidor
+          currentUserData = { ...initialUser, ...updatedUser };
+          setUser(currentUserData); 
+          // Atualiza o localStorage com os dados completos (mantendo o token)
+          localStorage.setItem('user', JSON.stringify(currentUserData));
       } else if (userRes.status === 403 || userRes.status === 401) {
-          navigate("/login"); // Token invalido/vencido
+          console.error("Token inválido ou expirado. Redirecionando.");
+          localStorage.removeItem('user');
+          navigate("/login");
           return;
       }
 
@@ -55,34 +60,44 @@ const UserDashboard = () => {
       const stagesRes = await fetch(`${API_URL}/api/stages`);
       setStages(await stagesRes.json());
 
-      // 3. Busca Inscrições (Agora Protegido)
+      // 3. Busca Inscrições (Protegido)
       const myRegRes = await fetch(`${API_URL}/api/registrations/user/${userId}`, {
           headers: getAuthHeaders(token)
       });
-      setMyRegistrations(await myRegRes.json());
+      setMyRegistrations(await myRegRes.json()); // Assumindo que o erro 403/401 já foi tratado acima
 
-      // 4. Configurações (Público)
-      const batchRes = await fetch(`${API_URL}/api/settings/current_batch`);
-      const batchData = await batchRes.json();
-      setBatchName(batchData.value || '');
-
+      // 4. Configurações (PIX)
       const pixRes = await fetch(`${API_URL}/api/settings/pix_key`);
-      const pixData = await pixRes.json();
+      const pixData = pixRes.ok ? await pixRes.json() : { value: '' };
       setPixKey(pixData.value || '');
 
+      // 5. Configurações (Batch Name - Usando uma query simples para exemplo)
+      // O backend não tinha uma rota específica. Vamos procurar um lote, ou deixar "Padrão"
+      const batchRes = await fetch(`${API_URL}/api/settings/batch_name`); // Tentativa de buscar um campo específico
+      const batchData = batchRes.ok ? await batchRes.json() : { value: '' };
+      setBatchName(batchData.value || 'Lote Padrão de Inscrição');
+
     } catch (error) {
-      console.error("Erro ao carregar dados:", error);
+      console.error("Erro fatal ao carregar dashboard:", error);
     } finally {
       setLoading(false);
     }
   };
 
   const handleCopyPix = () => {
-      navigator.clipboard.writeText(pixKey);
-      alert("Chave PIX copiada!");
+      if (pixKey) {
+          navigator.clipboard.writeText(pixKey);
+          alert("Chave PIX copiada!");
+      }
   };
 
-  if (!user) return null;
+  if (loading || !user) {
+    return (
+        <div className="min-h-screen bg-[#050505] flex items-center justify-center text-white">
+            <p className="text-xl">Carregando Dashboard...</p>
+        </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#050505] text-white font-sans flex flex-col">
