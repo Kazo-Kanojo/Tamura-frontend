@@ -14,7 +14,7 @@ const VELOCROSS_CATEGORIES = [
   "50cc", "65cc", "Feminino", "Free Force One", "Importada Amador", 
   "Junior", "Nacional Amador", "Open Importada", "Open Nacional", 
   "Over 250", "Ultimate 250x230", "VX 250f Nacional", "VX230", 
-  "VX3 Importada", "VX3 Nacional", "VX4", "VX5", "VX6", "VX7"
+  "VX3 Importada", "VX3 Nacional", "VX4", "VX5", "VX6", "VX7" 
 ];
 
 const AdminDashboard = () => {

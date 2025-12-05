@@ -5,7 +5,7 @@ import Navbar from './Navbar';
 import API_URL from '../api'; // Importação da API
 
 const CATEGORIES = [
-  "50cc", "65cc", "Feminino", "Free Force One", "Importada Amador","Junior", "Nacional Amador", "Open Importada", "Open Nacional", "Over 250", "Ultimate 250x230", "VX 250f Nacional", "VX230","VX1","VX2", "VX3 Importada", "VX3 Nacional", "VX4", "VX5", "VX6", "VX7",
+  "50cc", "65cc", "Feminino", "Free Force One", "Importada Amador","Junior", "Nacional Amador", "Open Importada", "Open Nacional", "Over 250", "Ultimate 250x230", "VX 250f Nacional", "VX230","VX1","VX2", "VX3 Importada", "VX3 Nacional", "VX4", "VX5", "VX6", "VX7","taça importada","Taça nacional", "trilheiros"
 ];
 
 const Registration = () => {
