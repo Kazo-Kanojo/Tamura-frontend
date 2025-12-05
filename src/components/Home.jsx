@@ -16,6 +16,13 @@ const Home = () => {
       .catch(err => console.error("Erro ao buscar eventos:", err));
   }, []);
 
+  // Helper para resolver URL da imagem
+  const getImageUrl = (url) => {
+    if (!url) return "/bgEvent.jpg";
+    if (url.startsWith('http')) return url; // Se for link do Cloudinary, usa direto
+    return `${API_URL}${url}`; // Se for local (legado), concatena a API
+  };
+
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-white font-sans selection:bg-[#D80000] selection:text-white flex flex-col">
       <Navbar />
@@ -67,7 +74,7 @@ const Home = () => {
                   date={new Date(event.date + 'T12:00:00').toLocaleDateString('pt-BR')} 
                   location={event.location}
                   price="Inscrições Abertas" 
-                  image={event.image_url ? `${API_URL}${event.image_url}` : "/bgEvent.jpg"} // URL Dinâmica na Imagem
+                  image={getImageUrl(event.image_url)} 
                 />
               </Link>
             ))}

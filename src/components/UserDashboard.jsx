@@ -167,7 +167,10 @@ const UserDashboard = () => {
                     <div key={stage.id} className={`bg-[#111] border rounded-2xl overflow-hidden transition-all duration-300 group shadow-lg flex flex-col ${isRegistered ? (isPaid ? 'border-green-900/50' : 'border-yellow-900/50') : 'border-gray-800 hover:border-[#D80000]'}`}>
                       <div className="h-48 bg-neutral-900 relative overflow-hidden">
                           {stage.image_url ? (
-                              <img src={`${API_URL}${stage.image_url}`} className="w-full h-full object-cover group-hover:scale-110 transition duration-700"/>
+                              <img 
+                                src={stage.image_url.startsWith('http') ? stage.image_url : `${API_URL}${stage.image_url}`} 
+                                className="w-full h-full object-cover group-hover:scale-110 transition duration-700"
+                              />
                           ) : (
                               <div className="w-full h-full bg-neutral-800 flex items-center justify-center text-gray-700"><Trophy size={48}/></div>
                           )}

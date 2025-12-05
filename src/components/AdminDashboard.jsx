@@ -465,7 +465,14 @@ const AdminDashboard = () => {
                   <div key={stage.id} className={`p-4 bg-neutral-900/50 rounded-lg flex flex-col sm:flex-row justify-between items-center border border-neutral-700 ${formData.id===stage.id?'border-yellow-500':''}`}>
                     <div className="flex items-center gap-4 w-full sm:w-auto">
                         <div className="h-12 w-12 rounded bg-neutral-800 overflow-hidden flex-shrink-0 border border-neutral-700">
-                             {stage.image_url ? <img src={`${API_URL}${stage.image_url}`} className="w-full h-full object-cover"/> : <div className="w-full h-full flex items-center justify-center text-gray-600"><ImageIcon size={20}/></div>}
+                             {stage.image_url ? (
+                                <img 
+                                    src={stage.image_url.startsWith('http') ? stage.image_url : `${API_URL}${stage.image_url}`} 
+                                    className="w-full h-full object-cover"
+                                />
+                             ) : (
+                                <div className="w-full h-full flex items-center justify-center text-gray-600"><ImageIcon size={20}/></div>
+                             )}
                         </div>
                         <div>
                             <div className="font-bold text-white">{stage.name}</div>
@@ -483,6 +490,7 @@ const AdminDashboard = () => {
           </div>
         )}
 
+        {/* ... Resto do código (abas scores, registrations, plans, users) permanece igual ... */}
         {/* --- ABA PONTUAÇÃO --- */}
         {activeTab === 'scores' && (
           <div>
