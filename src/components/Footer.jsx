@@ -24,7 +24,7 @@ const Footer = () => {
             <h3 className="text-lg font-bold uppercase mb-4 border-l-4 border-[#D80000] pl-3">Acesso Rápido</h3>
             <ul className="space-y-2 text-gray-400 text-sm">
               <li className="hover:text-white cursor-pointer transition">Calendário 2025</li>
-              <li className="hover:text-white cursor-pointer transition">Regulamento Oficial</li>
+              <li className="hover:text-white cursor-pointer transition"><a href="https://www.tamura.esp.br/midias/info/Regulamento%20da%20Copa%20CIRCUITO%20PAULISTA%20DE%20VELOCROSS%202025.pdf">Regulamento Oficial</a></li>
             </ul>
           </div>
 

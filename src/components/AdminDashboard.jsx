@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { 
   LogOut, Calendar, MapPin, Upload, Plus, Edit3, AlertCircle, CheckCircle, 
   ArrowLeft, Trash2, RefreshCw, X, ImageIcon, Search, Users, 
-  ClipboardList, DollarSign, Wallet, Tag, Save, FileText, Download
+  ClipboardList, DollarSign, Wallet, Tag, Save, FileText, Download, 
+  MessageCircle 
 } from 'lucide-react';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
