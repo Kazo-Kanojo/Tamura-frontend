@@ -4,12 +4,8 @@ import API_URL from "../api";
 
 const Standings = () => {
   const categoriesList = [
-    "50cc", "65cc", "Feminino", "Free Force One", "Importada Amador",
-    "Junior", "Nacional Amador", "Open Importada", "Open Nacional",
-    "Over 250", "Ultimate 250x230", "VX 250f Nacional", "VX230",
-    "VX3 Importada", "VX3 Nacional", "VX4", "VX5", "VX6", "VX7",
-    "Trilheiros Nacional", "Trilheiros Importada"
-  ];
+  "50cc", "65cc", "Feminino", "Free Force One", "Importada Amador","Junior", "Nacional Amador", "Open Importada", "Open Nacional", "Over 250", "Ultimate 250x230", "VX 250f Nacional", "VX230","VX1","VX2", "VX3 Importada", "VX3 Nacional", "VX4", "VX5", "VX6", "VX7","Taça importada","Taça nacional", "trilheiros"
+];
 
   const [activeCategory, setActiveCategory] = useState(categoriesList[0]);
   const [rankings, setRankings] = useState({});
