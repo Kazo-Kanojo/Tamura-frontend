@@ -41,7 +41,7 @@ const Home = () => {
         
         <div className="relative z-20 container mx-auto px-4 text-center mt-10">
           <h2 className="text-5xl md:text-7xl font-black italic tracking-tighter uppercase mb-6 drop-shadow-lg animate-fade-in-up">
-            Acelere para a <span className="text-[#D80000]">Glória</span>
+            Acelere o  <span className="text-[#D80000]">próximo Nível.</span>
           </h2>
           <p className="text-gray-200 text-lg md:text-xl max-w-2xl mx-auto mb-10 font-medium shadow-black drop-shadow-md animate-fade-in-up delay-100">
             O sistema oficial de inscrições da Tamura Eventos. 
