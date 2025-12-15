@@ -382,20 +382,6 @@ const AdminDashboard = () => {
       }
   };
 
-  // --- BACKUP ---
-  const handleDownloadBackup = async () => {
-      try {
-          const res = await fetch(`${API_URL}/api/admin/backup`, { headers: getAuthHeaders(false) });
-          if(res.ok) {
-              const blob = await res.blob();
-              const url = window.URL.createObjectURL(blob);
-              const a = document.createElement('a'); a.href = url; a.download = `backup_tamura_${new Date().toISOString().slice(0,10)}.sqlite`;
-              document.body.appendChild(a); a.click(); a.remove();
-              showMessage("Backup baixado com sucesso!", "success");
-          } else { showMessage("Erro ao baixar backup.", "error"); }
-      } catch(e) { showMessage("Erro de conexão.", "error"); }
-  };
-
   // =====================================================
   // RENDER
   // =====================================================
@@ -420,7 +406,6 @@ const AdminDashboard = () => {
                 ))}
             </div>
             <div className="h-6 w-px bg-neutral-700 hidden xl:block"></div>
-            <button onClick={handleDownloadBackup} className="flex items-center gap-2 text-blue-400 hover:text-blue-300 px-3 py-2 border border-blue-900 rounded hover:bg-blue-900/20 transition text-xs font-bold uppercase"><Download size={16} /> Backup</button>
             <button onClick={handleLogout} className="flex items-center gap-2 text-gray-400 hover:text-red-500 px-3 py-2 rounded transition text-xs font-bold uppercase tracking-widest whitespace-nowrap">
                 <LogOut size={16} /> Sair
             </button>
