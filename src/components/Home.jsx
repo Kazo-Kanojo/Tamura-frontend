@@ -57,7 +57,7 @@ const Home = () => {
       </div>
 
       {/* SEÇÃO 2: PRÓXIMAS ETAPAS */}
-      <div className="container mx-auto px-4 py-16">
+      <div className="container mx-auto px-4 py-16" id="events-list">
         <div className="flex items-center gap-4 mb-10">
           <div className="w-2 h-10 bg-[#D80000]"></div>
           <h3 className="text-3xl font-black text-white uppercase italic tracking-wide">
