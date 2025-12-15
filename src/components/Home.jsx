@@ -10,17 +10,16 @@ const Home = () => {
   const [events, setEvents] = useState([]);
 
   useEffect(() => {
-    fetch(`${API_URL}/api/stages`) // URL Dinâmica
+    fetch(`${API_URL}/api/stages`)
       .then(res => res.json())
       .then(data => setEvents(data))
       .catch(err => console.error("Erro ao buscar eventos:", err));
   }, []);
 
-  // Helper para resolver URL da imagem
   const getImageUrl = (url) => {
     if (!url) return "/bgEvent.jpg";
-    if (url.startsWith('http')) return url; // Se for link do Cloudinary, usa direto
-    return `${API_URL}${url}`; // Se for local (legado), concatena a API
+    if (url.startsWith('http')) return url; 
+    return `${API_URL}${url}`; 
   };
 
   return (
@@ -67,17 +66,54 @@ const Home = () => {
 
         {events.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {events.map((event) => (
-              <Link to={`/event/${event.id}/register`} key={event.id} className="block group">
-                <EventCard 
-                  title={event.name}
-                  date={new Date(event.date + 'T12:00:00').toLocaleDateString('pt-BR')} 
-                  location={event.location}
-                  price="Inscrições Abertas" 
-                  image={getImageUrl(event.image_url)} 
-                />
-              </Link>
-            ))}
+            {events.map((event) => {
+              // --- LÓGICA DE BLOQUEIO AUTOMÁTICO ---
+              // Se tiver end_date, usa ele. Se não, usa o date de início como fallback.
+              const endDate = event.end_date ? new Date(event.end_date) : new Date(event.date);
+              
+              // Adiciona 1 dia de tolerância (Dia seguinte ao evento para processar)
+              endDate.setDate(endDate.getDate() + 1); 
+              
+              // Ajusta para o último milissegundo do dia
+              endDate.setHours(23, 59, 59, 999); 
+              
+              const isClosed = new Date() > endDate;
+              // ---------------------------------------
+
+              return (
+                <div key={event.id} className="block group relative">
+                  {isClosed ? (
+                    // CARD BLOQUEADO (Sem Link)
+                    <div className="opacity-75 grayscale cursor-not-allowed relative">
+                       <EventCard 
+                          title={event.name}
+                          date={new Date(event.date + 'T12:00:00').toLocaleDateString('pt-BR')} 
+                          location={event.location}
+                          price="Encerrado" 
+                          image={getImageUrl(event.image_url)} 
+                        />
+                        {/* Overlay visual de encerrado */}
+                        <div className="absolute inset-0 bg-black/60 flex items-center justify-center z-10 rounded-xl">
+                            <span className="bg-red-600 text-white font-black uppercase px-6 py-3 -rotate-12 border-4 border-white shadow-2xl tracking-widest text-lg">
+                                Encerrado
+                            </span>
+                        </div>
+                    </div>
+                  ) : (
+                    // CARD ATIVO (Com Link)
+                    <Link to={`/event/${event.id}/register`}>
+                      <EventCard 
+                        title={event.name}
+                        date={new Date(event.date + 'T12:00:00').toLocaleDateString('pt-BR')} 
+                        location={event.location}
+                        price="Inscrições Abertas" 
+                        image={getImageUrl(event.image_url)} 
+                      />
+                    </Link>
+                  )}
+                </div>
+              );
+            })}
           </div>
         ) : (
           <div className="text-center py-20 bg-[#1a1a1a] rounded border border-gray-800">

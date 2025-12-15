@@ -23,8 +23,8 @@ const AdminDashboard = () => {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState({ text: '', type: '' });
 
-  // --- ESTADOS DO CRUD DE EVENTOS ---
-  const [formData, setFormData] = useState({ id: null, name: '', location: '', date: '' });
+  // --- ESTADOS DO CRUD DE EVENTOS (ATUALIZADO COM END_DATE) ---
+  const [formData, setFormData] = useState({ id: null, name: '', location: '', date: '', end_date: '' });
   const [imageFile, setImageFile] = useState(null);
 
   // --- ESTADOS DE USUÁRIOS ---
@@ -56,12 +56,10 @@ const AdminDashboard = () => {
   const [pixKey, setPixKey] = useState(''); 
 
   // --- HELPER: FORMATAR DATA PARA INPUT (YYYY-MM-DD) ---
-  // Função crucial para converter o objeto Date do Postgres para string do input
   const formatDateForInput = (dateValue) => {
     if (!dateValue) return '';
     try {
         const date = new Date(dateValue);
-        // Ajusta para string ISO (YYYY-MM-DD)
         return date.toISOString().split('T')[0];
     } catch (e) {
         return '';
@@ -133,7 +131,7 @@ const AdminDashboard = () => {
     } catch (error) { console.error(error); }
   };
 
-  // --- EVENTOS ---
+  // --- EVENTOS (ATUALIZADO) ---
   const handleSaveStage = async (e) => {
     e.preventDefault();
     if (!formData.name || !formData.date) return showMessage("Preencha nome e data", "error");
@@ -143,6 +141,8 @@ const AdminDashboard = () => {
     dataToSend.append('name', formData.name);
     dataToSend.append('location', formData.location);
     dataToSend.append('date', formData.date);
+    // ADICIONADO: Envia a data de término
+    dataToSend.append('end_date', formData.end_date);
     if (imageFile) dataToSend.append('image', imageFile);
 
     try {
@@ -176,13 +176,25 @@ const AdminDashboard = () => {
   };
 
   const handleEditClick = (stage) => {
-    setFormData({ id: stage.id, name: stage.name, location: stage.location, date: stage.date });
+    setFormData({ 
+        id: stage.id, 
+        name: stage.name, 
+        location: stage.location, 
+        date: stage.date,
+        // ADICIONADO: Carrega a data de término existente
+        end_date: stage.end_date || '' 
+    });
     setImageFile(null);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
-  const resetForm = () => { setFormData({ id: null, name: '', location: '', date: '' }); setImageFile(null); };
+  
+  const resetForm = () => { 
+      // ADICIONADO: Reseta também o end_date
+      setFormData({ id: null, name: '', location: '', date: '', end_date: '' }); 
+      setImageFile(null); 
+  };
 
-  // --- USUÁRIOS (Refatorado para incluir Data de Nascimento) ---
+  // --- USUÁRIOS ---
   const fetchUsers = async () => {
     setLoading(true);
     try {
@@ -204,7 +216,6 @@ const AdminDashboard = () => {
           bike_number: user.bike_number || '', 
           chip_id: user.chip_id || '', 
           role: user.role,
-          // Usa a função helper para garantir que a data apareça no input
           birth_date: formatDateForInput(user.birth_date)
       });
   };
@@ -420,7 +431,7 @@ const AdminDashboard = () => {
           </div>
         )}
 
-        {/* --- ABA EVENTOS --- */}
+        {/* --- ABA EVENTOS (ATUALIZADO) --- */}
         {activeTab === 'events' && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div className="bg-neutral-800 p-6 rounded-xl border border-neutral-700 h-min sticky top-24">
@@ -430,7 +441,17 @@ const AdminDashboard = () => {
               <form onSubmit={handleSaveStage} className="space-y-4">
                 <div><label className="text-xs text-gray-500 font-bold uppercase ml-1">Nome</label><input className="w-full bg-neutral-900 border border-neutral-700 rounded p-2 text-white" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} /></div>
                 <div><label className="text-xs text-gray-500 font-bold uppercase ml-1">Local</label><input className="w-full bg-neutral-900 border border-neutral-700 rounded p-2 text-white" value={formData.location} onChange={e => setFormData({...formData, location: e.target.value})} /></div>
-                <div><label className="text-xs text-gray-500 font-bold uppercase ml-1">Data</label><input type="date" className="w-full bg-neutral-900 border border-neutral-700 rounded p-2 text-white" value={formData.date} onChange={e => setFormData({...formData, date: e.target.value})} /></div>
+                
+                {/* DATA INÍCIO */}
+                <div><label className="text-xs text-gray-500 font-bold uppercase ml-1">Data Início</label><input type="date" className="w-full bg-neutral-900 border border-neutral-700 rounded p-2 text-white" value={formData.date} onChange={e => setFormData({...formData, date: e.target.value})} /></div>
+                
+                {/* DATA TÉRMINO (NOVO CAMPO) */}
+                <div>
+                    <label className="text-xs text-gray-500 font-bold uppercase ml-1">Data Término (Encerramento)</label>
+                    <input type="date" className="w-full bg-neutral-900 border border-neutral-700 rounded p-2 text-white border-l-4 border-l-red-600" value={formData.end_date} onChange={e => setFormData({...formData, end_date: e.target.value})} />
+                    <p className="text-[10px] text-gray-500 mt-1">* As inscrições fecham 1 dia após essa data.</p>
+                </div>
+
                 <div>
                     <label className="text-xs text-gray-500 font-bold uppercase ml-1">Imagem Capa</label>
                     <div className="relative"><input id="stage-image-input" type="file" accept="image/*" className="w-full text-sm text-gray-400 bg-neutral-900 border border-neutral-700 rounded p-2" onChange={(e) => setImageFile(e.target.files[0])} /><ImageIcon className="absolute right-3 top-3 text-gray-600" size={16}/></div>
@@ -460,6 +481,8 @@ const AdminDashboard = () => {
                         <div>
                             <div className="font-bold text-white">{stage.name}</div>
                             <div className="text-xs text-gray-500 flex items-center gap-2 mt-1"><MapPin size={12}/> {stage.location} | <Calendar size={12}/> {new Date(stage.date + 'T12:00:00').toLocaleDateString('pt-BR')}</div>
+                            {/* EXIBIR DATA TÉRMINO SE EXISTIR */}
+                            {stage.end_date && <div className="text-[10px] text-red-400 mt-1">Fim: {new Date(stage.end_date + 'T12:00:00').toLocaleDateString('pt-BR')}</div>}
                         </div>
                     </div>
                     <div className="flex gap-2 mt-4 sm:mt-0">
@@ -473,7 +496,6 @@ const AdminDashboard = () => {
           </div>
         )}
 
-        {/* ... Resto do código (abas scores, registrations, plans, users) permanece igual ... */}
         {/* --- ABA PONTUAÇÃO --- */}
         {activeTab === 'scores' && (
           <div>
@@ -757,7 +779,6 @@ const AdminDashboard = () => {
                                     <td className="p-4 font-bold text-white capitalize">{user.name}<div className="text-xs text-gray-500 font-normal lowercase">{user.email}</div></td>
                                     <td className="p-4 text-center"><span className="font-mono font-bold text-yellow-500 bg-yellow-500/10 px-2 py-1 rounded border border-yellow-500/20">{user.bike_number||'-'}</span></td>
                                     
-                                    {/* LISTAGEM CORRIGIDA */}
                                     <td className="p-4 text-center font-bold text-gray-300">
                                         {user.birth_date ? new Date(user.birth_date).getUTCFullYear() : '-'}
                                     </td>
