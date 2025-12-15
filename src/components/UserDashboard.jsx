@@ -3,7 +3,7 @@ import { useNavigate, Link } from "react-router-dom";
 import Navbar from "./Navbar";
 import Footer from "./Footer";
 import Standings from "./Standings"; 
-import { Calendar, MapPin, PlusCircle, CheckCircle, Trophy, Flag, Cpu, Clock, AlertCircle, Tag, Copy } from "lucide-react";
+import { Calendar, MapPin, PlusCircle, CheckCircle, Trophy, Flag, Cpu, Clock, AlertCircle, Tag, Copy, XCircle } from "lucide-react";
 import API_URL from "../api";
 
 const UserDashboard = () => {
@@ -72,8 +72,7 @@ const UserDashboard = () => {
       setPixKey(pixData.value || '');
 
       // 5. Configurações (Batch Name - Usando uma query simples para exemplo)
-      // O backend não tinha uma rota específica. Vamos procurar um lote, ou deixar "Padrão"
-      const batchRes = await fetch(`${API_URL}/api/settings/batch_name`); // Tentativa de buscar um campo específico
+      const batchRes = await fetch(`${API_URL}/api/settings/batch_name`); 
       const batchData = batchRes.ok ? await batchRes.json() : { value: '' };
       setBatchName(batchData.value || 'Lote Padrão de Inscrição');
 
@@ -163,13 +162,22 @@ const UserDashboard = () => {
                   const isRegistered = !!registration;
                   const isPaid = registration?.status === 'paid';
 
+                  // --- NOVA LÓGICA DE ENCERRAMENTO ---
+                  const endDate = stage.end_date ? new Date(stage.end_date) : new Date(stage.date);
+                  endDate.setDate(endDate.getDate() + 1); // Tolerância de 1 dia
+                  endDate.setHours(23, 59, 59, 999); // Fim do dia
+                  const isClosed = new Date() > endDate;
+                  // -----------------------------------
+
                   return (
-                    <div key={stage.id} className={`bg-[#111] border rounded-2xl overflow-hidden transition-all duration-300 group shadow-lg flex flex-col ${isRegistered ? (isPaid ? 'border-green-900/50' : 'border-yellow-900/50') : 'border-gray-800 hover:border-[#D80000]'}`}>
+                    <div key={stage.id} className={`bg-[#111] border rounded-2xl overflow-hidden transition-all duration-300 group shadow-lg flex flex-col ${isRegistered ? (isPaid ? 'border-green-900/50' : 'border-yellow-900/50') : (isClosed ? 'border-gray-800 opacity-75' : 'border-gray-800 hover:border-[#D80000]')}`}>
+                      
+                      {/* IMAGEM E STATUS DO TOPO */}
                       <div className="h-48 bg-neutral-900 relative overflow-hidden">
                           {stage.image_url ? (
                               <img 
                                 src={stage.image_url.startsWith('http') ? stage.image_url : `${API_URL}${stage.image_url}`} 
-                                className="w-full h-full object-cover group-hover:scale-110 transition duration-700"
+                                className={`w-full h-full object-cover transition duration-700 ${isClosed && !isRegistered ? 'grayscale' : 'group-hover:scale-110'}`}
                               />
                           ) : (
                               <div className="w-full h-full bg-neutral-800 flex items-center justify-center text-gray-700"><Trophy size={48}/></div>
@@ -186,6 +194,10 @@ const UserDashboard = () => {
                                         <Clock size={12} strokeWidth={4} /> Aguardando Pagamento
                                     </span>
                                  )
+                             ) : isClosed ? (
+                                <span className="flex items-center gap-2 bg-gray-700 text-white text-[10px] font-black px-3 py-1.5 rounded-full uppercase tracking-widest shadow-lg">
+                                    <XCircle size={12} strokeWidth={4} /> Encerrado
+                                </span>
                              ) : (
                                 <span className="bg-[#D80000] text-white text-[10px] font-black px-3 py-1.5 rounded-full uppercase tracking-widest shadow-lg">
                                     Inscrições Abertas
@@ -194,14 +206,17 @@ const UserDashboard = () => {
                           </div>
                       </div>
 
+                      {/* CONTEÚDO DO CARD */}
                       <div className="p-8 flex flex-col flex-grow">
-                        <h3 className="text-2xl font-black italic uppercase text-white mb-2">{stage.name}</h3>
+                        <h3 className={`text-2xl font-black italic uppercase mb-2 ${isClosed && !isRegistered ? 'text-gray-500' : 'text-white'}`}>{stage.name}</h3>
                         <div className="space-y-3 mb-8 text-sm text-gray-400">
-                          <p className="flex items-center gap-3"><Calendar size={16} className="text-[#D80000]"/> {new Date(stage.date + 'T12:00:00').toLocaleDateString('pt-BR')}</p>
-                          <p className="flex items-center gap-3"><MapPin size={16} className="text-[#D80000]"/> {stage.location}</p>
+                          <p className="flex items-center gap-3"><Calendar size={16} className={isClosed && !isRegistered ? 'text-gray-600' : 'text-[#D80000]'}/> {new Date(stage.date + 'T12:00:00').toLocaleDateString('pt-BR')}</p>
+                          <p className="flex items-center gap-3"><MapPin size={16} className={isClosed && !isRegistered ? 'text-gray-600' : 'text-[#D80000]'}/> {stage.location}</p>
                         </div>
+                        
                         <div className="mt-auto">
                             {isRegistered ? (
+                              // Se já está inscrito, mostra status do pagamento (independente se fechou ou não)
                               <div className={`rounded-xl p-4 border ${isPaid ? 'bg-green-900/10 border-green-900/30' : 'bg-yellow-900/10 border-yellow-900/30'}`}>
                                   {isPaid ? (
                                       <div className="text-center">
@@ -226,9 +241,17 @@ const UserDashboard = () => {
                                       </div>
                                   )}
                               </div>
+                            ) : isClosed ? (
+                              // Se NÃO está inscrito E fechou: Botão Desativado
+                              <button disabled className="w-full bg-neutral-800 text-gray-500 font-black py-4 rounded-xl uppercase tracking-widest cursor-not-allowed border border-neutral-700 flex items-center justify-center gap-2">
+                                <XCircle size={20} /> Inscrições Encerradas
+                              </button>
                             ) : (
+                              // Se NÃO está inscrito E está aberto: Botão de Inscrição
                               <Link to={`/event/${stage.id}/register`}>
-                                <button className="w-full bg-white text-black hover:bg-[#D80000] hover:text-white font-black py-4 rounded-xl uppercase tracking-widest transition-all flex items-center justify-center gap-2 shadow-xl hover:shadow-red-900/20 hover:-translate-y-1"><PlusCircle size={20} /> Inscrever-se</button>
+                                <button className="w-full bg-white text-black hover:bg-[#D80000] hover:text-white font-black py-4 rounded-xl uppercase tracking-widest transition-all flex items-center justify-center gap-2 shadow-xl hover:shadow-red-900/20 hover:-translate-y-1">
+                                  <PlusCircle size={20} /> Inscrever-se
+                                </button>
                               </Link>
                             )}
                         </div>
