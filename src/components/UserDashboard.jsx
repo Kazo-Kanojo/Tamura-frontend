@@ -14,12 +14,46 @@ const UserDashboard = () => {
   const [batchName, setBatchName] = useState(''); 
   const [pixKey, setPixKey] = useState('');
   const [loading, setLoading] = useState(true);
+  const [isCancelling, setIsCancelling] = useState(false); // NOVO ESTADO PARA LOADING DO BOTÃO
   
   // HELPER DE AUTH
   const getAuthHeaders = (token) => ({
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${token}`
   });
+
+  // --- NOVA FUNÇÃO PARA CANCELAR A INSCRIÇÃO ---
+  const handleCancelRegistration = async (registrationId, stageName) => {
+    if (!user) return alert("Erro de autenticação.");
+    if (!window.confirm(`Tem certeza que deseja cancelar sua inscrição para a etapa "${stageName}"? Esta ação não pode ser desfeita.`)) {
+        return;
+    }
+
+    setIsCancelling(true);
+    try {
+        const response = await fetch(`${API_URL}/api/registrations/${registrationId}`, {
+            method: 'DELETE',
+            headers: getAuthHeaders(user.token)
+        });
+
+        const result = await response.json();
+
+        if (response.ok) {
+            alert(result.message);
+            // Atualiza o estado removendo a inscrição cancelada
+            setMyRegistrations(prev => prev.filter(r => r.id !== registrationId));
+        } else {
+            alert("Erro ao cancelar inscrição: " + result.error);
+        }
+    } catch (error) {
+        console.error("Erro de conexão ao cancelar:", error);
+        alert("Erro de conexão com o servidor ao cancelar a inscrição.");
+    } finally {
+        setIsCancelling(false);
+    }
+  };
+  // ----------------------------------------------
+
 
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
@@ -221,7 +255,15 @@ const UserDashboard = () => {
                                   {isPaid ? (
                                       <div className="text-center">
                                           <p className="text-green-500 font-black uppercase text-sm flex items-center justify-center gap-2 mb-1"><CheckCircle size={16}/> Inscrição Paga</p>
-                                          <p className="text-xs text-green-400/60">Prepare sua moto e boa prova!</p>
+                                          <p className="text-xs text-green-400/60 mb-2">Prepare sua moto e boa prova!</p>
+                                          {/* Desabilitar cancelamento para pago (usuário precisa contatar admin) */}
+                                          <button 
+                                              title="Para cancelamento e reembolso, entre em contato com o organizador."
+                                              disabled
+                                              className="w-full text-xs text-gray-700 bg-gray-900/20 border border-gray-900/50 py-2 rounded cursor-not-allowed"
+                                          >
+                                              Cancelamento indisponível
+                                          </button>
                                       </div>
                                   ) : (
                                       <div className="text-center">
@@ -237,7 +279,18 @@ const UserDashboard = () => {
                                           ) : (
                                               <p className="text-[10px] text-red-400 mb-2">Chave PIX não configurada.</p>
                                           )}
-                                          <p className="text-[10px] text-gray-500">Envie o comprovante para o organizador.</p>
+                                          <p className="text-[10px] text-gray-500 mb-3">Envie o comprovante para o organizador.</p>
+                                          
+                                          {/* ADICIONAR O BOTÃO DE CANCELAR AQUI */}
+                                          <button
+                                            onClick={() => handleCancelRegistration(registration.id, stage.name)}
+                                            disabled={isCancelling}
+                                            className="w-full flex items-center justify-center gap-2 text-xs font-bold text-red-400 bg-red-900/20 border border-red-900/50 py-2 rounded transition hover:bg-red-900/50"
+                                          >
+                                            <XCircle size={14} /> {isCancelling ? 'Cancelando...' : 'Cancelar Inscrição'}
+                                          </button>
+                                          {/* FIM DO BOTÃO DE CANCELAR */}
+                                          
                                       </div>
                                   )}
                               </div>
