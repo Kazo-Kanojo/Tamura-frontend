@@ -48,6 +48,10 @@ const AdminDashboard = () => {
   const [selectedStageReg, setSelectedStageReg] = useState(null); 
   const [registrationsList, setRegistrationsList] = useState([]); 
   const [regSearch, setRegSearch] = useState(''); 
+  
+  // NOVO: Estado para edição de inscrição
+  const [editingRegistration, setEditingRegistration] = useState(null);
+  const [regForm, setRegForm] = useState({ id: null, pilot_name: '', pilot_number: '', categories: '', total_price: '' });
 
   // --- ESTADOS DE PLANOS E CONFIGURAÇÕES ---
   const [selectedStagePlan, setSelectedStagePlan] = useState(null); 
@@ -303,6 +307,71 @@ const AdminDashboard = () => {
           }
       } catch (error) { showMessage("Erro ao atualizar status", "error"); }
   };
+
+  // --- NOVAS FUNÇÕES DE EDIÇÃO E CANCELAMENTO DE INSCRIÇÃO ---
+
+  const handleEditRegistrationClick = (reg) => {
+      setEditingRegistration(reg.id);
+      setRegForm({
+          id: reg.id,
+          pilot_name: reg.pilot_name,
+          pilot_number: reg.pilot_number || '',
+          categories: reg.categories,
+          total_price: reg.total_price
+      });
+  };
+
+  const handleCancelEditRegistration = () => {
+      setEditingRegistration(null);
+      setRegForm({ id: null, pilot_name: '', pilot_number: '', categories: '', total_price: '' });
+  };
+
+  const handleSaveRegistration = async (e) => {
+      e.preventDefault();
+      setLoading(true);
+      try {
+          const res = await fetch(`${API_URL}/api/registrations/${regForm.id}`, {
+              method: 'PUT',
+              headers: getAuthHeaders(),
+              body: JSON.stringify(regForm)
+          });
+          if (res.ok) {
+              showMessage("Inscrição atualizada!", "success");
+              setEditingRegistration(null);
+              fetchRegistrations(selectedStageReg.id);
+          } else {
+              showMessage("Erro ao atualizar.", "error");
+          }
+      } catch (error) {
+          showMessage("Erro de conexão.", "error");
+      } finally {
+          setLoading(false);
+      }
+  };
+
+  const handleDeleteRegistration = async (id) => {
+      if (!window.confirm("ATENÇÃO: Tem certeza que deseja cancelar esta inscrição? Isso é irreversível e removerá o piloto da lista.")) return;
+      setLoading(true);
+      try {
+          const res = await fetch(`${API_URL}/api/registrations/${id}`, {
+              method: 'DELETE',
+              headers: getAuthHeaders()
+          });
+          if (res.ok) {
+              showMessage("Inscrição cancelada com sucesso.", "success");
+              fetchRegistrations(selectedStageReg.id);
+          } else {
+              const data = await res.json();
+              showMessage(data.error || "Erro ao cancelar.", "error");
+          }
+      } catch (error) {
+          showMessage("Erro de conexão.", "error");
+      } finally {
+          setLoading(false);
+      }
+  };
+
+  // -----------------------------------------------------------
 
   const handleGeneratePDF = () => {
       const doc = new jsPDF();
@@ -585,6 +654,59 @@ const AdminDashboard = () => {
         {/* --- ABA INSCRIÇÕES --- */}
         {activeTab === 'registrations' && (
           <div className="animate-fade-in">
+             {/* MODAL DE EDIÇÃO DE INSCRIÇÃO */}
+             {editingRegistration && (
+                 <div className="bg-neutral-800 p-6 rounded-xl border-2 border-yellow-600/50 shadow-2xl mb-6 sticky top-24 z-40">
+                     <div className="flex justify-between items-center mb-4"><h3 className="text-xl font-bold text-yellow-500 flex items-center gap-2"><Edit3 size={20}/> Editando Inscrição</h3><button onClick={handleCancelEditRegistration} className="text-gray-400 hover:text-white"><X size={24}/></button></div>
+                     <form onSubmit={handleSaveRegistration} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                         <div className="col-span-1">
+                             <label className="text-xs text-gray-500 font-bold uppercase">Nome do Piloto</label>
+                             <input className="w-full bg-neutral-900 border border-neutral-700 rounded p-2 text-white" value={regForm.pilot_name} onChange={e => setRegForm({...regForm, pilot_name: e.target.value})} />
+                         </div>
+                         <div className="col-span-1">
+                             <label className="text-xs text-gray-500 font-bold uppercase text-yellow-500">Nº Moto</label>
+                             <input className="w-full bg-neutral-900 border border-yellow-900/50 rounded p-2 text-yellow-500 font-bold" value={regForm.pilot_number} onChange={e => setRegForm({...regForm, pilot_number: e.target.value})} />
+                         </div>
+                         <div className="col-span-1">
+                             <label className="text-xs text-gray-500 font-bold uppercase text-green-500">Valor Total (R$)</label>
+                             <input type="number" className="w-full bg-neutral-900 border border-neutral-700 rounded p-2 text-green-500 font-bold" value={regForm.total_price} onChange={e => setRegForm({...regForm, total_price: e.target.value})} />
+                         </div>
+                         
+                         {/* SELEÇÃO DE CATEGORIAS COM CHECKBOXES */}
+                         <div className="col-span-2">
+                            <label className="text-xs text-gray-500 font-bold uppercase mb-2 block">Categorias</label>
+                            <div className="grid grid-cols-2 md:grid-cols-3 gap-2 max-h-40 overflow-y-auto bg-neutral-900 p-2 rounded border border-neutral-700">
+                                {VELOCROSS_CATEGORIES.map(cat => (
+                                    <label key={cat} className="flex items-center gap-2 text-sm text-gray-300 cursor-pointer hover:text-white">
+                                        <input 
+                                            type="checkbox" 
+                                            checked={regForm.categories.split(', ').includes(cat)}
+                                            onChange={(e) => {
+                                                let cats = regForm.categories ? regForm.categories.split(', ') : [];
+                                                // Remove strings vazias que podem aparecer
+                                                cats = cats.filter(c => c.trim() !== '');
+                                                
+                                                if (e.target.checked) {
+                                                    cats.push(cat);
+                                                } else {
+                                                    cats = cats.filter(c => c !== cat);
+                                                }
+                                                setRegForm({...regForm, categories: cats.join(', ')});
+                                            }}
+                                            className="accent-red-500"
+                                        />
+                                        {cat}
+                                    </label>
+                                ))}
+                            </div>
+                            <p className="text-[10px] text-gray-500 mt-1">Categorias atuais: {regForm.categories}</p>
+                         </div>
+
+                         <div className="col-span-2 flex justify-end gap-3 mt-2"><button type="button" onClick={handleCancelEditRegistration} className="px-4 py-2 rounded bg-neutral-700 hover:bg-neutral-600 text-white font-bold text-sm">Cancelar</button><button type="submit" className="px-6 py-2 rounded bg-green-600 hover:bg-green-700 text-white font-bold text-sm uppercase flex items-center gap-2"><CheckCircle size={16}/> Salvar</button></div>
+                     </form>
+                 </div>
+             )}
+
              {!selectedStageReg ? (
                  <div className="bg-neutral-800 p-8 rounded-xl border border-neutral-700">
                     <h2 className="text-xl font-bold mb-6 flex items-center gap-2"><ClipboardList className="text-green-500"/> Gerenciar Inscrições - Selecione a Etapa</h2>
@@ -624,13 +746,25 @@ const AdminDashboard = () => {
                         </div>
                         <div className="overflow-x-auto">
                             <table className="w-full text-left border-collapse">
-                                <thead><tr className="bg-neutral-900/50 text-gray-400 text-xs uppercase tracking-wider border-b border-neutral-700"><th className="p-4">Piloto</th><th className="p-4">Contato</th><th className="p-4 text-center">Nº Moto</th><th className="p-4">Categorias</th><th className="p-4">Pacote</th><th className="p-4 text-right">Valor</th><th className="p-4 text-center">Pagamento</th></tr></thead>
+                                <thead>
+                                    <tr className="bg-neutral-900/50 text-gray-400 text-xs uppercase tracking-wider border-b border-neutral-700">
+                                        <th className="p-4">Piloto</th>
+                                        <th className="p-4">Contato</th>
+                                        <th className="p-4 text-center">Nº Moto</th>
+                                        <th className="p-4">Categorias</th>
+                                        <th className="p-4">Pacote</th>
+                                        <th className="p-4 text-right">Valor</th>
+                                        <th className="p-4 text-center">Pagamento</th>
+                                        {/* COLUNA AÇÕES ADICIONADA */}
+                                        <th className="p-4 text-right">Ações</th>
+                                    </tr>
+                                </thead>
                                 <tbody className="divide-y divide-neutral-700 text-sm text-gray-300">
                                     {registrationsList.length > 0 ? (
                                         registrationsList
                                         .filter(reg => reg.pilot_name.toLowerCase().includes(regSearch.toLowerCase()) || (reg.pilot_number && reg.pilot_number.includes(regSearch)))
                                         .map(reg => (
-                                            <tr key={reg.id} className="hover:bg-neutral-700/30 transition">
+                                            <tr key={reg.id} className={`hover:bg-neutral-700/30 transition ${editingRegistration === reg.id ? 'bg-yellow-900/10' : ''}`}>
                                                 <td className="p-4 font-bold text-white">{reg.pilot_name}<div className="text-xs text-gray-500 font-normal">{reg.cpf}</div></td>
                                                 <td className="p-4 flex items-center gap-2">{reg.phone}{reg.phone && (<a href={`https://wa.me/55${reg.phone.replace(/\D/g, '')}`} target="_blank" rel="noreferrer" className="text-green-500 hover:text-green-400 p-1 bg-green-900/20 rounded" title="WhatsApp"><MessageCircle size={16} /></a>)}</td>
                                                 <td className="p-4 text-center"><span className="font-mono font-bold text-yellow-500">{reg.pilot_number}</span></td>
@@ -638,8 +772,18 @@ const AdminDashboard = () => {
                                                 <td className="p-4 text-xs text-gray-400">{reg.plan_name}</td>
                                                 <td className="p-4 text-right font-bold text-white">R$ {reg.total_price},00</td>
                                                 <td className="p-4 text-center"><button onClick={() => togglePaymentStatus(reg)} className={`px-3 py-1 rounded-full text-xs font-bold uppercase transition border ${reg.status === 'paid' ? 'bg-green-900/20 text-green-500 border-green-900/50 hover:bg-green-900/40' : 'bg-yellow-900/20 text-yellow-500 border-yellow-900/50 hover:bg-yellow-900/40'}`}>{reg.status === 'paid' ? 'Pago' : 'Pendente'}</button></td>
+                                                
+                                                {/* BOTÕES DE AÇÃO ADICIONADOS */}
+                                                <td className="p-4 text-right flex justify-end gap-2">
+                                                    <button onClick={() => handleEditRegistrationClick(reg)} className="p-2 rounded text-gray-400 hover:text-yellow-400 hover:bg-yellow-400/10" title="Editar Inscrição">
+                                                        <Edit3 size={16}/>
+                                                    </button>
+                                                    <button onClick={() => handleDeleteRegistration(reg.id)} className="p-2 rounded text-gray-400 hover:text-red-500 hover:bg-red-500/10" title="Cancelar Inscrição (Irreversível)">
+                                                        <Trash2 size={16}/>
+                                                    </button>
+                                                </td>
                                             </tr>
-                                    ))) : (<tr><td colSpan="7" className="p-12 text-center text-gray-500">Nenhuma inscrição realizada ainda.</td></tr>)}
+                                    ))) : (<tr><td colSpan="8" className="p-12 text-center text-gray-500">Nenhuma inscrição realizada ainda.</td></tr>)}
                                 </tbody>
                             </table>
                         </div>
