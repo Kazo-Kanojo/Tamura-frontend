@@ -4,10 +4,6 @@ import { ArrowLeft, Check, Trophy, Bike } from 'lucide-react';
 import Navbar from './Navbar';
 import API_URL from '../api'; // Importação da API
 
-const CATEGORIES = [
-  "50cc", "65cc", "Feminino", "Free Force One", "Importada Amador","Junior", "Nacional Amador", "Open Importada", "Open Nacional", "Over 250", "Ultimate 250x230", "VX 250f Nacional", "VX230","VX1","VX2", "VX3 Importada", "VX3 Nacional", "VX4", "VX5", "VX6", "VX7","Taça importada","Taça nacional", "trilheiros"
-];
-
 const Registration = () => {
   const { id } = useParams(); 
   const navigate = useNavigate();
@@ -17,6 +13,7 @@ const Registration = () => {
   const [batchName, setBatchName] = useState('');
   const [selectedPlan, setSelectedPlan] = useState(null);
   const [selectedCategories, setSelectedCategories] = useState([]);
+  const [categoriesList, setCategoriesList] = useState([]); // Estado para as categorias do DB
   const [loading, setLoading] = useState(false);
 
   const user = JSON.parse(localStorage.getItem('user'));
@@ -31,7 +28,7 @@ const Registration = () => {
         return;
     }
 
-    // Buscar Etapas
+    // 1. Buscar Etapas
     fetch(`${API_URL}/api/stages`)
       .then(res => res.json())
       .then(stages => {
@@ -45,7 +42,7 @@ const Registration = () => {
       })
       .catch(err => console.error("Erro ao carregar etapas:", err));
 
-    // Buscar Preços Específicos da Etapa
+    // 2. Buscar Preços Específicos da Etapa
     fetch(`${API_URL}/api/stages/${id}/prices`)
       .then(res => res.json())
       .then(data => {
@@ -53,6 +50,15 @@ const Registration = () => {
           setBatchName(data.batch_name);
       })
       .catch(err => console.error("Erro ao carregar planos:", err));
+
+    // 3. Buscar Categorias Dinâmicas (NOVO)
+    fetch(`${API_URL}/api/categories`)
+      .then(res => res.json())
+      .then(data => {
+          // Extrai apenas os nomes, pois a lógica de seleção usa strings
+          setCategoriesList(data.map(cat => cat.name));
+      })
+      .catch(err => console.error("Erro ao carregar categorias:", err));
 
   }, [id, navigate, user]);
 
@@ -161,16 +167,20 @@ const Registration = () => {
               <span className={`text-xs font-bold px-3 py-1 rounded border ${selectedCategories.length === selectedPlan.limit_cat ? 'bg-green-900/30 text-green-400 border-green-600' : 'bg-gray-800 text-gray-300 border-gray-700'}`}>{selectedCategories.length} de {selectedPlan.limit_cat === 99 ? 'Todas' : selectedPlan.limit_cat} selecionadas</span>
             </div>
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-              {CATEGORIES.map((cat) => {
-                if (selectedPlan.allowed && !selectedPlan.allowed.includes(cat)) return null;
-                const isSelected = selectedCategories.includes(cat);
-                return (
-                  <button key={cat} onClick={() => toggleCategory(cat)} className={`px-4 py-3 rounded-lg border text-sm font-medium text-left transition-all flex justify-between items-center ${isSelected ? 'bg-white text-black border-white shadow-lg scale-[1.02]' : 'bg-[#111] border-gray-800 text-gray-400 hover:border-gray-600 hover:text-white'}`}>
-                    {cat}
-                    {isSelected && <Bike size={14} className="text-[#D80000]" />}
-                  </button>
-                );
-              })}
+              {categoriesList.length > 0 ? (
+                categoriesList.map((cat) => {
+                  if (selectedPlan.allowed && !selectedPlan.allowed.includes(cat)) return null;
+                  const isSelected = selectedCategories.includes(cat);
+                  return (
+                    <button key={cat} onClick={() => toggleCategory(cat)} className={`px-4 py-3 rounded-lg border text-sm font-medium text-left transition-all flex justify-between items-center ${isSelected ? 'bg-white text-black border-white shadow-lg scale-[1.02]' : 'bg-[#111] border-gray-800 text-gray-400 hover:border-gray-600 hover:text-white'}`}>
+                      {cat}
+                      {isSelected && <Bike size={14} className="text-[#D80000]" />}
+                    </button>
+                  );
+                })
+              ) : (
+                <div className="col-span-4 text-center text-gray-500 py-8">Carregando categorias ou nenhuma categoria disponível...</div>
+              )}
             </div>
           </section>
         )}

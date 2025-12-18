@@ -4,7 +4,7 @@ import {
   LogOut, Calendar, MapPin, Upload, Plus, Edit3, AlertCircle, CheckCircle, 
   ArrowLeft, Trash2, RefreshCw, X, ImageIcon, Search, Users, 
   ClipboardList, DollarSign, Wallet, Tag, Save, FileText, Download, 
-  MessageCircle 
+  MessageCircle, List 
 } from 'lucide-react';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
@@ -23,7 +23,7 @@ const AdminDashboard = () => {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState({ text: '', type: '' });
 
-  // --- ESTADOS DO CRUD DE EVENTOS (ATUALIZADO COM END_DATE) ---
+  // --- ESTADOS DO CRUD DE EVENTOS ---
   const [formData, setFormData] = useState({ id: null, name: '', location: '', date: '', end_date: '' });
   const [imageFile, setImageFile] = useState(null);
 
@@ -31,8 +31,6 @@ const AdminDashboard = () => {
   const [usersList, setUsersList] = useState([]);
   const [userSearch, setUserSearch] = useState(''); 
   const [editingUser, setEditingUser] = useState(null); 
-  
-  // Estado do formulário de usuário com birth_date
   const [userForm, setUserForm] = useState({ 
       id: null, name: '', email: '', phone: '', bike_number: '', chip_id: '', role: 'user', birth_date: '' 
   });
@@ -48,8 +46,6 @@ const AdminDashboard = () => {
   const [selectedStageReg, setSelectedStageReg] = useState(null); 
   const [registrationsList, setRegistrationsList] = useState([]); 
   const [regSearch, setRegSearch] = useState(''); 
-  
-  // NOVO: Estado para edição de inscrição
   const [editingRegistration, setEditingRegistration] = useState(null);
   const [regForm, setRegForm] = useState({ id: null, pilot_name: '', pilot_number: '', categories: '', total_price: '' });
 
@@ -58,6 +54,12 @@ const AdminDashboard = () => {
   const [localPlans, setLocalPlans] = useState([]); 
   const [batchName, setBatchName] = useState(''); 
   const [pixKey, setPixKey] = useState(''); 
+
+  // --- ESTADOS DE CATEGORIAS ---
+  const [categoriesList, setCategoriesList] = useState([]);
+  const [catSearch, setCatSearch] = useState('');
+  const [editingCat, setEditingCat] = useState(null);
+  const [newCatName, setNewCatName] = useState('');
 
   // --- HELPER: FORMATAR DATA PARA INPUT (YYYY-MM-DD) ---
   const formatDateForInput = (dateValue) => {
@@ -95,7 +97,10 @@ const AdminDashboard = () => {
 
   // Carregamentos Iniciais
   useEffect(() => { fetchStages(); }, []);
-  useEffect(() => { if (activeTab === 'users') fetchUsers(); }, [activeTab]);
+  useEffect(() => { 
+      if (activeTab === 'users') fetchUsers(); 
+      if (activeTab === 'categories') fetchCategories();
+  }, [activeTab]);
   
   useEffect(() => { 
       if (activeTab === 'plans') {
@@ -135,7 +140,67 @@ const AdminDashboard = () => {
     } catch (error) { console.error(error); }
   };
 
-  // --- EVENTOS (ATUALIZADO) ---
+  // --- CATEGORIAS (NOVA FUNCIONALIDADE) ---
+  const fetchCategories = async () => {
+      setLoading(true);
+      try {
+          const res = await fetch(`${API_URL}/api/categories`);
+          if (res.ok) setCategoriesList(await res.json());
+      } catch (error) { console.error(error); } finally { setLoading(false); }
+  };
+
+  const handleSaveCategory = async (e) => {
+      e.preventDefault();
+      if (!newCatName) return showMessage("Nome inválido", "error");
+      
+      setLoading(true);
+      try {
+          const url = editingCat 
+            ? `${API_URL}/api/categories/${editingCat.id}` 
+            : `${API_URL}/api/categories`;
+          
+          const method = editingCat ? 'PUT' : 'POST';
+
+          const res = await fetch(url, {
+              method: method,
+              headers: getAuthHeaders(),
+              body: JSON.stringify({ name: newCatName })
+          });
+
+          if (res.ok) {
+              showMessage(editingCat ? "Categoria atualizada!" : "Categoria criada!", "success");
+              setNewCatName('');
+              setEditingCat(null);
+              fetchCategories();
+          } else {
+              const d = await res.json();
+              showMessage(d.error || "Erro ao salvar", "error");
+          }
+      } catch (error) { showMessage("Erro conexão", "error"); } finally { setLoading(false); }
+  };
+
+  const handleDeleteCategory = async (id) => {
+      if (!window.confirm("Tem certeza? Isso não removerá inscrições antigas, mas removerá a opção para novas.")) return;
+      try {
+          const res = await fetch(`${API_URL}/api/categories/${id}`, {
+              method: 'DELETE',
+              headers: getAuthHeaders()
+          });
+          if (res.ok) { showMessage("Removido.", "success"); fetchCategories(); }
+      } catch (e) { showMessage("Erro", "error"); }
+  };
+  
+  const handleEditCatClick = (cat) => {
+      setEditingCat(cat);
+      setNewCatName(cat.name);
+  };
+
+  const handleCancelEditCat = () => {
+      setEditingCat(null);
+      setNewCatName('');
+  };
+
+  // --- EVENTOS ---
   const handleSaveStage = async (e) => {
     e.preventDefault();
     if (!formData.name || !formData.date) return showMessage("Preencha nome e data", "error");
@@ -145,7 +210,6 @@ const AdminDashboard = () => {
     dataToSend.append('name', formData.name);
     dataToSend.append('location', formData.location);
     dataToSend.append('date', formData.date);
-    // ADICIONADO: Envia a data de término
     dataToSend.append('end_date', formData.end_date);
     if (imageFile) dataToSend.append('image', imageFile);
 
@@ -185,7 +249,6 @@ const AdminDashboard = () => {
         name: stage.name, 
         location: stage.location, 
         date: stage.date,
-        // ADICIONADO: Carrega a data de término existente
         end_date: stage.end_date || '' 
     });
     setImageFile(null);
@@ -193,7 +256,6 @@ const AdminDashboard = () => {
   };
   
   const resetForm = () => { 
-      // ADICIONADO: Reseta também o end_date
       setFormData({ id: null, name: '', location: '', date: '', end_date: '' }); 
       setImageFile(null); 
   };
@@ -308,8 +370,6 @@ const AdminDashboard = () => {
       } catch (error) { showMessage("Erro ao atualizar status", "error"); }
   };
 
-  // --- NOVAS FUNÇÕES DE EDIÇÃO E CANCELAMENTO DE INSCRIÇÃO ---
-
   const handleEditRegistrationClick = (reg) => {
       setEditingRegistration(reg.id);
       setRegForm({
@@ -370,8 +430,6 @@ const AdminDashboard = () => {
           setLoading(false);
       }
   };
-
-  // -----------------------------------------------------------
 
   const handleGeneratePDF = () => {
       const doc = new jsPDF();
@@ -479,9 +537,9 @@ const AdminDashboard = () => {
           </div>
           <div className="flex items-center gap-4 overflow-x-auto max-w-full pb-2 xl:pb-0">
             <div className="flex bg-neutral-900 p-1 rounded-lg border border-neutral-700">
-                {['events', 'scores', 'registrations', 'plans', 'users'].map(tab => (
+                {['events', 'scores', 'registrations', 'plans', 'users', 'categories'].map(tab => (
                     <button key={tab} onClick={() => setActiveTab(tab)} className={`px-4 py-1.5 rounded text-sm font-bold uppercase transition ${activeTab === tab ? 'bg-neutral-700 text-white shadow' : 'text-gray-500 hover:text-gray-300'}`}>
-                        {tab === 'events' ? 'Eventos' : tab === 'scores' ? 'Pontuação' : tab === 'registrations' ? 'Inscrições' : tab === 'plans' ? 'Planos/Lotes' : 'Pilotos'}
+                        {tab === 'events' ? 'Eventos' : tab === 'scores' ? 'Pontuação' : tab === 'registrations' ? 'Inscrições' : tab === 'plans' ? 'Planos/Lotes' : tab === 'categories' ? 'Categorias' : 'Pilotos'}
                     </button>
                 ))}
             </div>
@@ -500,7 +558,7 @@ const AdminDashboard = () => {
           </div>
         )}
 
-        {/* --- ABA EVENTOS (ATUALIZADO) --- */}
+        {/* --- ABA EVENTOS --- */}
         {activeTab === 'events' && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div className="bg-neutral-800 p-6 rounded-xl border border-neutral-700 h-min sticky top-24">
@@ -511,10 +569,8 @@ const AdminDashboard = () => {
                 <div><label className="text-xs text-gray-500 font-bold uppercase ml-1">Nome</label><input className="w-full bg-neutral-900 border border-neutral-700 rounded p-2 text-white" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} /></div>
                 <div><label className="text-xs text-gray-500 font-bold uppercase ml-1">Local</label><input className="w-full bg-neutral-900 border border-neutral-700 rounded p-2 text-white" value={formData.location} onChange={e => setFormData({...formData, location: e.target.value})} /></div>
                 
-                {/* DATA INÍCIO */}
                 <div><label className="text-xs text-gray-500 font-bold uppercase ml-1">Data Início</label><input type="date" className="w-full bg-neutral-900 border border-neutral-700 rounded p-2 text-white" value={formData.date} onChange={e => setFormData({...formData, date: e.target.value})} /></div>
                 
-                {/* DATA TÉRMINO (NOVO CAMPO) */}
                 <div>
                     <label className="text-xs text-gray-500 font-bold uppercase ml-1">Data Término (Encerramento)</label>
                     <input type="date" className="w-full bg-neutral-900 border border-neutral-700 rounded p-2 text-white border-l-4 border-l-red-600" value={formData.end_date} onChange={e => setFormData({...formData, end_date: e.target.value})} />
@@ -550,7 +606,6 @@ const AdminDashboard = () => {
                         <div>
                             <div className="font-bold text-white">{stage.name}</div>
                             <div className="text-xs text-gray-500 flex items-center gap-2 mt-1"><MapPin size={12}/> {stage.location} | <Calendar size={12}/> {new Date(stage.date + 'T12:00:00').toLocaleDateString('pt-BR')}</div>
-                            {/* EXIBIR DATA TÉRMINO SE EXISTIR */}
                             {stage.end_date && <div className="text-[10px] text-red-400 mt-1">Fim: {new Date(stage.end_date + 'T12:00:00').toLocaleDateString('pt-BR')}</div>}
                         </div>
                     </div>
@@ -562,6 +617,76 @@ const AdminDashboard = () => {
                 ))}
               </div>
             </div>
+          </div>
+        )}
+
+        {/* --- ABA CATEGORIAS --- */}
+        {activeTab === 'categories' && (
+          <div className="animate-fade-in grid grid-cols-1 md:grid-cols-3 gap-8">
+             {/* FORMULÁRIO */}
+             <div className="bg-neutral-800 p-6 rounded-xl border border-neutral-700 h-min sticky top-24">
+                <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
+                    {editingCat ? ( <><Edit3 className="text-yellow-500"/> Editar Categoria</> ) : ( <><Plus className="text-green-500"/> Nova Categoria</> )}
+                </h2>
+                <form onSubmit={handleSaveCategory} className="space-y-4">
+                    <div>
+                        <label className="text-xs text-gray-500 font-bold uppercase ml-1">Nome da Categoria</label>
+                        <input 
+                            className="w-full bg-neutral-900 border border-neutral-700 rounded p-2 text-white focus:border-green-500" 
+                            value={newCatName} 
+                            onChange={e => setNewCatName(e.target.value)} 
+                            placeholder="Ex: VX1, Junior, etc..."
+                        />
+                    </div>
+                    <div className="flex gap-2 pt-2">
+                        {editingCat && <button type="button" onClick={handleCancelEditCat} className="flex-1 bg-neutral-700 p-3 rounded font-bold uppercase text-xs">Cancelar</button>}
+                        <button type="submit" disabled={loading} className={`flex-1 ${editingCat ? 'bg-yellow-600' : 'bg-green-600'} text-white p-3 rounded font-bold uppercase`}>
+                            {loading ? '...' : (editingCat ? 'Salvar' : 'Adicionar')}
+                        </button>
+                    </div>
+                </form>
+             </div>
+
+             {/* LISTA */}
+             <div className="md:col-span-2 bg-neutral-800 rounded-xl border border-neutral-700 overflow-hidden shadow-2xl">
+                <div className="p-6 border-b border-neutral-700 bg-neutral-900 flex justify-between items-center">
+                   <h2 className="text-xl font-black italic uppercase text-white flex items-center gap-2"> Categorias Ativas</h2>
+                   <div className="relative">
+                       <Search className="absolute left-3 top-2.5 text-gray-500" size={16} />
+                       <input 
+                           type="text" 
+                           placeholder="Buscar..." 
+                           className="bg-neutral-800 border border-neutral-600 rounded-full py-2 pl-10 pr-4 text-sm text-white focus:border-green-500 outline-none"
+                           value={catSearch}
+                           onChange={(e) => setCatSearch(e.target.value)}
+                       />
+                   </div>
+                </div>
+                <div className="max-h-[600px] overflow-y-auto">
+                    <table className="w-full text-left border-collapse">
+                        <thead className="sticky top-0 bg-neutral-900 z-10">
+                            <tr className="text-gray-400 text-xs uppercase tracking-wider border-b border-neutral-700">
+                                <th className="p-4">Nome</th>
+                                <th className="p-4 text-right">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-neutral-700 text-sm text-gray-300">
+                            {categoriesList
+                                .filter(c => c.name.toLowerCase().includes(catSearch.toLowerCase()))
+                                .map(cat => (
+                                <tr key={cat.id} className="hover:bg-neutral-700/30 transition">
+                                    <td className="p-4 font-bold text-white">{cat.name}</td>
+                                    <td className="p-4 text-right flex justify-end gap-2">
+                                        <button onClick={() => handleEditCatClick(cat)} className="p-2 rounded text-gray-400 hover:text-yellow-400 hover:bg-yellow-400/10"><Edit3 size={16}/></button>
+                                        <button onClick={() => handleDeleteCategory(cat.id)} className="p-2 rounded text-gray-400 hover:text-red-500 hover:bg-red-500/10"><Trash2 size={16}/></button>
+                                    </td>
+                                </tr>
+                            ))}
+                            {categoriesList.length === 0 && <tr><td colSpan="2" className="p-6 text-center text-gray-500">Nenhuma categoria encontrada.</td></tr>}
+                        </tbody>
+                    </table>
+                </div>
+             </div>
           </div>
         )}
 
@@ -683,7 +808,6 @@ const AdminDashboard = () => {
                                             checked={regForm.categories.split(', ').includes(cat)}
                                             onChange={(e) => {
                                                 let cats = regForm.categories ? regForm.categories.split(', ') : [];
-                                                // Remove strings vazias que podem aparecer
                                                 cats = cats.filter(c => c.trim() !== '');
                                                 
                                                 if (e.target.checked) {
@@ -755,7 +879,6 @@ const AdminDashboard = () => {
                                         <th className="p-4">Pacote</th>
                                         <th className="p-4 text-right">Valor</th>
                                         <th className="p-4 text-center">Pagamento</th>
-                                        {/* COLUNA AÇÕES ADICIONADA */}
                                         <th className="p-4 text-right">Ações</th>
                                     </tr>
                                 </thead>
@@ -773,7 +896,6 @@ const AdminDashboard = () => {
                                                 <td className="p-4 text-right font-bold text-white">R$ {reg.total_price},00</td>
                                                 <td className="p-4 text-center"><button onClick={() => togglePaymentStatus(reg)} className={`px-3 py-1 rounded-full text-xs font-bold uppercase transition border ${reg.status === 'paid' ? 'bg-green-900/20 text-green-500 border-green-900/50 hover:bg-green-900/40' : 'bg-yellow-900/20 text-yellow-500 border-yellow-900/50 hover:bg-yellow-900/40'}`}>{reg.status === 'paid' ? 'Pago' : 'Pendente'}</button></td>
                                                 
-                                                {/* BOTÕES DE AÇÃO ADICIONADOS */}
                                                 <td className="p-4 text-right flex justify-end gap-2">
                                                     <button onClick={() => handleEditRegistrationClick(reg)} className="p-2 rounded text-gray-400 hover:text-yellow-400 hover:bg-yellow-400/10" title="Editar Inscrição">
                                                         <Edit3 size={16}/>
@@ -862,7 +984,6 @@ const AdminDashboard = () => {
                          <div><label className="text-xs text-gray-500 font-bold uppercase">Email</label><input className="w-full bg-neutral-900 border border-neutral-700 rounded p-2 text-white" value={userForm.email} onChange={e => setUserForm({...userForm, email: e.target.value})} /></div>
                          <div><label className="text-xs text-gray-500 font-bold uppercase">Telefone</label><input className="w-full bg-neutral-900 border border-neutral-700 rounded p-2 text-white" value={userForm.phone} onChange={e => setUserForm({...userForm, phone: e.target.value})} /></div>
                          
-                         {/* CAMPO DE DATA PARA EDIÇÃO */}
                          <div>
                              <label className="text-xs text-gray-500 font-bold uppercase text-yellow-500">Data Nasc.</label>
                              <input 
