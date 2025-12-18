@@ -10,10 +10,6 @@ import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import API_URL from '../api';
 
-const VELOCROSS_CATEGORIES = [
-  "50cc", "65cc", "Feminino", "Free Force One", "Importada Amador","Junior", "Nacional Amador", "Open Importada", "Open Nacional", "Over 250", "Ultimate 250x230", "VX 250f Nacional", "VX230","VX1","VX2", "VX3 Importada", "VX3 Nacional", "VX4", "VX5", "VX6", "VX7","Taça importada","Taça nacional", "trilheiros"
-];
-
 const AdminDashboard = () => {
   const navigate = useNavigate(); 
   const [activeTab, setActiveTab] = useState('events'); 
@@ -97,9 +93,11 @@ const AdminDashboard = () => {
 
   // Carregamentos Iniciais
   useEffect(() => { fetchStages(); }, []);
+  
+  // ATUALIZAÇÃO: Carrega categorias também nas abas de Scores e Registrations
   useEffect(() => { 
       if (activeTab === 'users') fetchUsers(); 
-      if (activeTab === 'categories') fetchCategories();
+      if (activeTab === 'categories' || activeTab === 'scores' || activeTab === 'registrations') fetchCategories();
   }, [activeTab]);
   
   useEffect(() => { 
@@ -140,13 +138,13 @@ const AdminDashboard = () => {
     } catch (error) { console.error(error); }
   };
 
-  // --- CATEGORIAS (NOVA FUNCIONALIDADE) ---
+  // --- CATEGORIAS (FUNCIONALIDADE DINÂMICA) ---
   const fetchCategories = async () => {
-      setLoading(true);
+      // Não ativamos setLoading aqui para não piscar a tela se já tiver dados
       try {
           const res = await fetch(`${API_URL}/api/categories`);
           if (res.ok) setCategoriesList(await res.json());
-      } catch (error) { console.error(error); } finally { setLoading(false); }
+      } catch (error) { console.error(error); }
   };
 
   const handleSaveCategory = async (e) => {
@@ -711,12 +709,13 @@ const AdminDashboard = () => {
                 <button onClick={() => setSelectedStage(null)} className="mb-6 text-sm text-gray-400 hover:text-white flex items-center gap-2"><ArrowLeft size={16}/> Voltar</button>
                 <h2 className="text-2xl font-bold mb-6 border-b border-neutral-700 pb-4">{selectedStage.name} | Categorias</h2>
                 <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                  {VELOCROSS_CATEGORIES.map(cat => (
-                      <button key={cat} onClick={() => setSelectedCategory(cat)} className={`p-4 rounded-lg border flex flex-col items-center justify-center gap-3 ${uploadedCategories.includes(cat) ? 'bg-green-900/10 border-green-800/50' : 'bg-neutral-900 border-neutral-700 hover:border-red-500'}`}>
-                        {uploadedCategories.includes(cat) ? <CheckCircle className="text-green-500" size={24} /> : <div className="w-6 h-6 rounded-full border-2 border-neutral-600" />}
-                        <span className="font-bold text-sm text-center">{cat}</span>
+                  {categoriesList.map(cat => (
+                      <button key={cat.id} onClick={() => setSelectedCategory(cat.name)} className={`p-4 rounded-lg border flex flex-col items-center justify-center gap-3 ${uploadedCategories.includes(cat.name) ? 'bg-green-900/10 border-green-800/50' : 'bg-neutral-900 border-neutral-700 hover:border-red-500'}`}>
+                        {uploadedCategories.includes(cat.name) ? <CheckCircle className="text-green-500" size={24} /> : <div className="w-6 h-6 rounded-full border-2 border-neutral-600" />}
+                        <span className="font-bold text-sm text-center">{cat.name}</span>
                       </button>
                   ))}
+                  {categoriesList.length === 0 && <p className="col-span-4 text-gray-500 text-sm">Nenhuma categoria encontrada. Cadastre na aba 'Categorias'.</p>}
                 </div>
               </div>
             )}
@@ -801,27 +800,28 @@ const AdminDashboard = () => {
                          <div className="col-span-2">
                             <label className="text-xs text-gray-500 font-bold uppercase mb-2 block">Categorias</label>
                             <div className="grid grid-cols-2 md:grid-cols-3 gap-2 max-h-40 overflow-y-auto bg-neutral-900 p-2 rounded border border-neutral-700">
-                                {VELOCROSS_CATEGORIES.map(cat => (
-                                    <label key={cat} className="flex items-center gap-2 text-sm text-gray-300 cursor-pointer hover:text-white">
+                                {categoriesList.map(cat => (
+                                    <label key={cat.id} className="flex items-center gap-2 text-sm text-gray-300 cursor-pointer hover:text-white">
                                         <input 
                                             type="checkbox" 
-                                            checked={regForm.categories.split(', ').includes(cat)}
+                                            checked={regForm.categories.split(', ').includes(cat.name)}
                                             onChange={(e) => {
                                                 let cats = regForm.categories ? regForm.categories.split(', ') : [];
                                                 cats = cats.filter(c => c.trim() !== '');
                                                 
                                                 if (e.target.checked) {
-                                                    cats.push(cat);
+                                                    cats.push(cat.name);
                                                 } else {
-                                                    cats = cats.filter(c => c !== cat);
+                                                    cats = cats.filter(c => c !== cat.name);
                                                 }
                                                 setRegForm({...regForm, categories: cats.join(', ')});
                                             }}
                                             className="accent-red-500"
                                         />
-                                        {cat}
+                                        {cat.name}
                                     </label>
                                 ))}
+                                {categoriesList.length === 0 && <p className="text-gray-500 text-xs col-span-2">Nenhuma categoria encontrada.</p>}
                             </div>
                             <p className="text-[10px] text-gray-500 mt-1">Categorias atuais: {regForm.categories}</p>
                          </div>
