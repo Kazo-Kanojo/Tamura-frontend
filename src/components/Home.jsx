@@ -13,6 +13,7 @@ const Home = () => {
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [showInstallBanner, setShowInstallBanner] = useState(false);
   const [isIOS, setIsIOS] = useState(false);
+  const [isStandalone, setIsStandalone] = useState(false);
 
   useEffect(() => {
     // 1. Buscar Eventos
@@ -22,21 +23,26 @@ const Home = () => {
       .catch(err => console.error("Erro ao buscar eventos:", err));
 
     // --- LÓGICA PWA ---
+    
+    // Verificar se já está instalado (Standalone)
+    const isInStandaloneMode = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+    setIsStandalone(isInStandaloneMode);
+
     // Detectar Android/Desktop (Chrome/Edge)
     const handleBeforeInstallPrompt = (e) => {
-      e.preventDefault(); 
+      e.preventDefault(); // Impede o mini-infobar padrão
       setDeferredPrompt(e);
+      // Opcional: Mostrar o banner automaticamente ao detectar que pode instalar
       setShowInstallBanner(true); 
     };
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
 
     // Detectar iOS (iPhone/iPad)
     const isIosDevice = /iPhone|iPad|iPod/.test(navigator.userAgent);
-    const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
-    
-    if (isIosDevice && !isStandalone) {
+    if (isIosDevice && !isInStandaloneMode) {
       setIsIOS(true);
-      setShowInstallBanner(true);
+      // No iOS, mostramos o banner automaticamente ou deixamos o usuário clicar no botão
+      setShowInstallBanner(true); 
     }
 
     return () => {
@@ -46,13 +52,21 @@ const Home = () => {
 
   // Função para instalar no Android/Desktop
   const handleInstallClick = async () => {
+    if (isIOS) {
+        // Se for iOS, apenas garante que o banner de instruções está visível
+        setShowInstallBanner(true);
+        return;
+    }
+
     if (!deferredPrompt) return;
+    
     deferredPrompt.prompt();
     const { outcome } = await deferredPrompt.userChoice;
+    
     if (outcome === 'accepted') {
       setShowInstallBanner(false);
+      setDeferredPrompt(null);
     }
-    setDeferredPrompt(null);
   };
 
   const getImageUrl = (url) => {
@@ -86,11 +100,26 @@ const Home = () => {
             Garanta seu gate nas melhores pistas de Velocross da região.
           </p>
           
-          <Link to="/login">
-            <button className="bg-[#D80000] hover:bg-red-700 text-white px-8 py-4 rounded font-black uppercase text-lg tracking-widest transition-transform hover:-translate-y-1 shadow-[0_4px_0_rgb(100,0,0)] hover:shadow-[0_2px_0_rgb(100,0,0)] active:shadow-none active:translate-y-0 animate-bounce-slow">
-              Quero Correr
-            </button>
-          </Link>
+          <div className="flex flex-col md:flex-row gap-4 justify-center items-center">
+            <Link to="/login">
+                <button className="bg-[#D80000] hover:bg-red-700 text-white px-8 py-4 rounded font-black uppercase text-lg tracking-widest transition-transform hover:-translate-y-1 shadow-[0_4px_0_rgb(100,0,0)] hover:shadow-[0_2px_0_rgb(100,0,0)] active:shadow-none active:translate-y-0 animate-bounce-slow">
+                Quero Correr
+                </button>
+            </Link>
+
+            {/* --- BOTÃO DE INSTALAÇÃO (HERO) --- */}
+            {/* Só aparece se houver prompt disponível (Android/PC) OU se for iOS e não estiver instalado */}
+            {(!isStandalone && (deferredPrompt || isIOS)) && (
+                 <button 
+                    onClick={handleInstallClick}
+                    className="bg-transparent border-2 border-white hover:bg-white hover:text-black text-white px-8 py-4 rounded font-black uppercase text-lg tracking-widest transition-transform hover:-translate-y-1 flex items-center gap-2 group"
+                 >
+                    <Download className="w-6 h-6 group-hover:text-[#D80000]" />
+                    Instalar App
+                 </button>
+            )}
+          </div>
+
         </div>
       </div>
 
@@ -261,8 +290,8 @@ const Home = () => {
 
       <Footer />
 
-      {/* --- BANNER DE INSTALAÇÃO PWA --- */}
-      {showInstallBanner && (
+      {/* --- BANNER DE INSTALAÇÃO PWA (Rodapé / Instruções iOS) --- */}
+      {showInstallBanner && !isStandalone && (
         <div className="fixed bottom-4 left-4 right-4 md:left-auto md:right-4 md:w-96 bg-white p-4 rounded-xl shadow-2xl border-l-4 border-orange-500 z-50 animate-fade-in-up text-black">
           <button 
             onClick={() => setShowInstallBanner(false)} 
@@ -286,7 +315,7 @@ const Home = () => {
                   2. Selecione <strong>"Adicionar à Tela de Início"</strong>.
                 </p>
               ) : (
-                // Botão para Android
+                // Botão para Android (no banner)
                 <div className="mt-2">
                   <p className="text-xs text-gray-600 mb-2">
                     Tenha acesso rápido aos eventos direto da sua tela inicial.
