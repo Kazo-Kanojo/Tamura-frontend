@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import Navbar from "./Navbar";
 import EventCard from "./EventCard";
 import Footer from "./Footer";
-import { Timer, Award, Users, CheckCircle, Phone, Mail, MapPin, Share, Download, X } from "lucide-react";
+import { Timer, Award, Users, CheckCircle, Phone, Mail, MapPin, Share, Download, X, List } from "lucide-react";
 import API_URL from "../api"; 
 
 const Home = () => {
@@ -101,13 +101,15 @@ const Home = () => {
           </p>
           
           <div className="flex flex-col md:flex-row gap-4 justify-center items-center">
+            {/* Botão Quero Correr */}
             <Link to="/login">
                 <button className="bg-[#D80000] hover:bg-red-700 text-white px-8 py-4 rounded font-black uppercase text-lg tracking-widest transition-transform hover:-translate-y-1 shadow-[0_4px_0_rgb(100,0,0)] hover:shadow-[0_2px_0_rgb(100,0,0)] active:shadow-none active:translate-y-0 animate-bounce-slow">
                 Quero Correr
                 </button>
             </Link>
-            
-            <Link to="/login">
+
+            {/* --- NOVO BOTÃO: VEJA OS RESULTADOS --- */}
+            <Link to="/register">
                 <button className="bg-transparent border-2 border-white hover:bg-white hover:text-[#D80000] text-white px-8 py-4 rounded font-black uppercase text-lg tracking-widest transition-transform hover:-translate-y-1 shadow-lg flex items-center gap-2">
                     <List className="w-6 h-6" /> {/* Ícone opcional */}
                     Veja os Resultados
@@ -119,9 +121,9 @@ const Home = () => {
             {(!isStandalone && (deferredPrompt || isIOS)) && (
                  <button 
                     onClick={handleInstallClick}
-                    className="bg-transparent border-2 border-white hover:bg-white hover:text-black text-white px-8 py-4 rounded font-black uppercase text-lg tracking-widest transition-transform hover:-translate-y-1 flex items-center gap-2 group"
+                    className="bg-transparent border-2 border-[#D80000] text-[#D80000] hover:bg-[#D80000] hover:text-white px-8 py-4 rounded font-black uppercase text-lg tracking-widest transition-transform hover:-translate-y-1 flex items-center gap-2 group"
                  >
-                    <Download className="w-6 h-6 group-hover:text-[#D80000]" />
+                    <Download className="w-6 h-6" />
                     Instalar App
                  </button>
             )}
