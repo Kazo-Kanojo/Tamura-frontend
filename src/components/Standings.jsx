@@ -9,6 +9,7 @@ const Standings = () => {
   const [rankings, setRankings] = useState({});
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+  const [categorySearch, setCategorySearch] = useState(""); // NOVO: Estado para busca de categorias
   const [stages, setStages] = useState([]);
   const [viewMode, setViewMode] = useState('overall');
 
@@ -80,6 +81,11 @@ const Standings = () => {
       .catch(err => setLoading(false));
   }, [viewMode, categoriesList]);
 
+  // Filtra a lista de categorias com base na busca do usuário
+  const filteredCategories = categoriesList.filter(cat => 
+    cat.toLowerCase().includes(categorySearch.toLowerCase())
+  );
+
   const currentList = rankings[activeCategory] || [];
   const filteredPilots = currentList.filter(p => 
     p.name?.toLowerCase().includes(searchTerm.toLowerCase()) || 
@@ -132,22 +138,41 @@ const Standings = () => {
         </div>
       </div>
 
-      {/* SELETOR DE CATEGORIAS */}
-      <div className="bg-[#151515] border-b border-gray-800 p-2 overflow-x-auto scrollbar-hide">
-        <div className="flex gap-2 min-w-max px-2">
-          {categoriesList.length > 0 ? (
-            categoriesList.map(cat => (
-              <button
-                key={cat}
-                onClick={() => setActiveCategory(cat)}
-                className={`px-5 py-2 rounded text-xs font-black uppercase tracking-wider transition-all skew-x-[-10deg] ${activeCategory === cat ? 'bg-[#D80000] text-white shadow-[0_0_15px_rgba(216,0,0,0.4)]' : 'bg-[#222] text-gray-500 hover:text-white hover:bg-[#333]'}`}
-              >
-                <span className="skew-x-[10deg] inline-block">{cat}</span>
-              </button>
-            ))
-          ) : (
-            <div className="px-5 py-2 text-xs text-gray-500 italic">Carregando categorias...</div>
-          )}
+      {/* SELETOR DE CATEGORIAS COM FILTRO */}
+      <div className="bg-[#151515] border-b border-gray-800 pt-3 pb-1">
+        
+        {/* Input de filtro de categorias */}
+        <div className="px-4 mb-2 flex items-center">
+            <div className="flex items-center gap-2 bg-[#0a0a0a] border border-gray-700 rounded px-2 py-1 w-full md:w-64">
+                <Search size={12} className="text-gray-500" />
+                <input 
+                    type="text" 
+                    placeholder="Filtrar categorias..." 
+                    className="bg-transparent border-none text-xs text-white placeholder-gray-600 focus:outline-none w-full"
+                    value={categorySearch}
+                    onChange={(e) => setCategorySearch(e.target.value)}
+                />
+            </div>
+        </div>
+
+        <div className="overflow-x-auto scrollbar-hide pb-2">
+            <div className="flex gap-2 min-w-max px-4">
+            {filteredCategories.length > 0 ? (
+                filteredCategories.map(cat => (
+                <button
+                    key={cat}
+                    onClick={() => setActiveCategory(cat)}
+                    className={`px-5 py-2 rounded text-xs font-black uppercase tracking-wider transition-all skew-x-[-10deg] ${activeCategory === cat ? 'bg-[#D80000] text-white shadow-[0_0_15px_rgba(216,0,0,0.4)]' : 'bg-[#222] text-gray-500 hover:text-white hover:bg-[#333]'}`}
+                >
+                    <span className="skew-x-[10deg] inline-block">{cat}</span>
+                </button>
+                ))
+            ) : (
+                <div className="px-5 py-2 text-xs text-gray-500 italic">
+                    {categoriesList.length === 0 ? "Carregando categorias..." : "Nenhuma categoria encontrada."}
+                </div>
+            )}
+            </div>
         </div>
       </div>
 
