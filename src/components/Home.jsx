@@ -3,6 +3,8 @@ import { Link } from "react-router-dom";
 import Navbar from "./Navbar";
 import EventCard from "./EventCard";
 import Footer from "./Footer";
+import { Timer, Award, Users, CheckCircle, Phone, Mail, MapPin } from "lucide-react";
+import API_URL from "../api"; // Importação da API
 // Adicionei Share, Download e X nos imports do lucide-react
 import { Timer, Award, Users, CheckCircle, Phone, Mail, MapPin, Share, Download, X } from "lucide-react";
 import API_URL from "../api"; 
