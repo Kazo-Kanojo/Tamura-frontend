@@ -325,7 +325,7 @@ const UserDashboard = () => {
           <section>
             <div className="flex items-center gap-4 mb-10">
                <Trophy size={32} className="text-[#D80000]" />
-               <h2 className="text-3xl font-black uppercase italic">Classificação <span className="text-[#D80000]">Campeonato</span></h2>
+               <h2 className="text-3xl font-black uppercase italic">Veja sua <span className="text-[#D80000]">Pontuação</span></h2>
             </div>
             <Standings />
           </section>
