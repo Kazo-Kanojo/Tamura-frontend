@@ -1,30 +1,27 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import Navbar from "./Navbar";
 import EventCard from "./EventCard";
 import Footer from "./Footer";
-import { Timer, Award, Users, CheckCircle, Phone, Mail, MapPin } from "lucide-react";
-import API_URL from "../api"; // Importação da API
-// Adicionei Share, Download e X nos imports do lucide-react
 import { Timer, Award, Users, CheckCircle, Phone, Mail, MapPin, Share, Download, X } from "lucide-react";
 import API_URL from "../api"; 
 
 const Home = () => {
   const [events, setEvents] = useState([]);
 
-  // --- ESTADOS PARA O PWA (ADICIONADO) ---
+  // --- ESTADOS PARA O PWA ---
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [showInstallBanner, setShowInstallBanner] = useState(false);
   const [isIOS, setIsIOS] = useState(false);
 
   useEffect(() => {
-    // 1. Buscar Eventos (Sua lógica original)
+    // 1. Buscar Eventos
     fetch(`${API_URL}/api/stages`)
       .then(res => res.json())
       .then(data => setEvents(data))
       .catch(err => console.error("Erro ao buscar eventos:", err));
 
-    // --- LÓGICA PWA (ADICIONADO) ---
+    // --- LÓGICA PWA ---
     // Detectar Android/Desktop (Chrome/Edge)
     const handleBeforeInstallPrompt = (e) => {
       e.preventDefault(); 
@@ -264,7 +261,7 @@ const Home = () => {
 
       <Footer />
 
-      {/* --- BANNER DE INSTALAÇÃO PWA (ADICIONADO) --- */}
+      {/* --- BANNER DE INSTALAÇÃO PWA --- */}
       {showInstallBanner && (
         <div className="fixed bottom-4 left-4 right-4 md:left-auto md:right-4 md:w-96 bg-white p-4 rounded-xl shadow-2xl border-l-4 border-orange-500 z-50 animate-fade-in-up text-black">
           <button 
