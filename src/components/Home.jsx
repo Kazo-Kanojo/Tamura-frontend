@@ -106,6 +106,13 @@ const Home = () => {
                 Quero Correr
                 </button>
             </Link>
+            
+            <Link to="/login">
+                <button className="bg-transparent border-2 border-white hover:bg-white hover:text-[#D80000] text-white px-8 py-4 rounded font-black uppercase text-lg tracking-widest transition-transform hover:-translate-y-1 shadow-lg flex items-center gap-2">
+                    <List className="w-6 h-6" /> {/* Ícone opcional */}
+                    Veja os Resultados
+                </button>
+            </Link>
 
             {/* --- BOTÃO DE INSTALAÇÃO (HERO) --- */}
             {/* Só aparece se houver prompt disponível (Android/PC) OU se for iOS e não estiver instalado */}
