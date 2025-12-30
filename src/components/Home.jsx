@@ -3,18 +3,58 @@ import { Link } from "react-router-dom";
 import Navbar from "./Navbar";
 import EventCard from "./EventCard";
 import Footer from "./Footer";
-import { Timer, Award, Users, CheckCircle, Phone, Mail, MapPin } from "lucide-react";
-import API_URL from "../api"; // Importação da API
+// Adicionei Share, Download e X nos imports do lucide-react
+import { Timer, Award, Users, CheckCircle, Phone, Mail, MapPin, Share, Download, X } from "lucide-react";
+import API_URL from "../api"; 
 
 const Home = () => {
   const [events, setEvents] = useState([]);
 
+  // --- ESTADOS PARA O PWA (ADICIONADO) ---
+  const [deferredPrompt, setDeferredPrompt] = useState(null);
+  const [showInstallBanner, setShowInstallBanner] = useState(false);
+  const [isIOS, setIsIOS] = useState(false);
+
   useEffect(() => {
+    // 1. Buscar Eventos (Sua lógica original)
     fetch(`${API_URL}/api/stages`)
       .then(res => res.json())
       .then(data => setEvents(data))
       .catch(err => console.error("Erro ao buscar eventos:", err));
+
+    // --- LÓGICA PWA (ADICIONADO) ---
+    // Detectar Android/Desktop (Chrome/Edge)
+    const handleBeforeInstallPrompt = (e) => {
+      e.preventDefault(); 
+      setDeferredPrompt(e);
+      setShowInstallBanner(true); 
+    };
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+
+    // Detectar iOS (iPhone/iPad)
+    const isIosDevice = /iPhone|iPad|iPod/.test(navigator.userAgent);
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
+    
+    if (isIosDevice && !isStandalone) {
+      setIsIOS(true);
+      setShowInstallBanner(true);
+    }
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    };
   }, []);
+
+  // Função para instalar no Android/Desktop
+  const handleInstallClick = async () => {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    if (outcome === 'accepted') {
+      setShowInstallBanner(false);
+    }
+    setDeferredPrompt(null);
+  };
 
   const getImageUrl = (url) => {
     if (!url) return "/bgEvent.jpg";
@@ -67,32 +107,23 @@ const Home = () => {
         {events.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {events.map((event) => {
-              // --- LÓGICA DE BLOQUEIO AUTOMÁTICO ---
-              // Se tiver end_date, usa ele. Se não, usa o date de início como fallback.
               const endDate = event.end_date ? new Date(event.end_date) : new Date(event.date);
-              
-              // Adiciona 1 dia de tolerância (Dia seguinte ao evento para processar)
               endDate.setDate(endDate.getDate() + 1); 
-              
-              // Ajusta para o último milissegundo do dia
               endDate.setHours(23, 59, 59, 999); 
               
               const isClosed = new Date() > endDate;
-              // ---------------------------------------
 
               return (
                 <div key={event.id} className="block group relative">
                   {isClosed ? (
-                    // CARD BLOQUEADO (Sem Link)
                     <div className="opacity-75 grayscale cursor-not-allowed relative">
-                       <EventCard 
+                        <EventCard 
                           title={event.name}
                           date={new Date(event.date + 'T12:00:00').toLocaleDateString('pt-BR')} 
                           location={event.location}
                           price="Encerrado" 
                           image={getImageUrl(event.image_url)} 
                         />
-                        {/* Overlay visual de encerrado */}
                         <div className="absolute inset-0 bg-black/60 flex items-center justify-center z-10 rounded-xl">
                             <span className="bg-red-600 text-white font-black uppercase px-6 py-3 -rotate-12 border-4 border-white shadow-2xl tracking-widest text-lg">
                                 Encerrado
@@ -100,7 +131,6 @@ const Home = () => {
                         </div>
                     </div>
                   ) : (
-                    // CARD ATIVO (Com Link)
                     <Link to={`/event/${event.id}/register`}>
                       <EventCard 
                         title={event.name}
@@ -231,6 +261,49 @@ const Home = () => {
       </div>
 
       <Footer />
+
+      {/* --- BANNER DE INSTALAÇÃO PWA (ADICIONADO) --- */}
+      {showInstallBanner && (
+        <div className="fixed bottom-4 left-4 right-4 md:left-auto md:right-4 md:w-96 bg-white p-4 rounded-xl shadow-2xl border-l-4 border-orange-500 z-50 animate-fade-in-up text-black">
+          <button 
+            onClick={() => setShowInstallBanner(false)} 
+            className="absolute top-2 right-2 text-gray-400 hover:text-gray-600"
+          >
+            <X size={20} />
+          </button>
+          
+          <div className="flex items-start gap-3">
+            <div className="bg-orange-100 p-2 rounded-lg">
+              {isIOS ? <Share className="text-orange-600" size={24} /> : <Download className="text-orange-600" size={24} />}
+            </div>
+            <div>
+              <h3 className="font-bold text-gray-800 text-sm">Instalar App Tamura</h3>
+              
+              {isIOS ? (
+                // Mensagem específica para iPhone
+                <p className="text-xs text-gray-600 mt-1">
+                  Para instalar no iPhone: <br/>
+                  1. Toque no botão <strong>Compartilhar</strong> <span className="inline-block align-middle"><Share size={12}/></span> abaixo.<br/>
+                  2. Selecione <strong>"Adicionar à Tela de Início"</strong>.
+                </p>
+              ) : (
+                // Botão para Android
+                <div className="mt-2">
+                  <p className="text-xs text-gray-600 mb-2">
+                    Tenha acesso rápido aos eventos direto da sua tela inicial.
+                  </p>
+                  <button 
+                    onClick={handleInstallClick}
+                    className="w-full bg-orange-600 text-white text-xs font-bold py-2 px-4 rounded hover:bg-orange-700 transition"
+                  >
+                    Instalar Agora
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
