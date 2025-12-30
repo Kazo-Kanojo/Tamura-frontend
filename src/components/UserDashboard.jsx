@@ -165,7 +165,7 @@ const UserDashboard = () => {
                         <Cpu size={20} />
                     </div>
                     <div>
-                        <p className="text-[10px] text-gray-500 uppercase font-bold">Transponder</p>
+                        <p className="text-[10px] text-gray-500 uppercase font-bold">Chip id</p>
                         <p className={`text-xl font-black italic ${user.chip_id ? 'text-blue-400' : 'text-gray-600'}`}>
                             {user.chip_id || "---"}
                         </p>
