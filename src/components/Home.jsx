@@ -235,7 +235,7 @@ const Home = () => {
                         Tecnologia de ponta com chips de alta precisão. Resultados em tempo real para que nenhum centésimo seja perdido.
                     </p>
                     <div className="flex flex-wrap gap-4 text-sm text-gray-300">
-                        <span className="flex items-center gap-1"><CheckCircle size={16} className="text-[#D80000]"/> Transponders Ativos</span>
+                        <span className="flex items-center gap-1"><CheckCircle size={16} className="text-[#D80000]"/> Chip Passivo</span>
                         <span className="flex items-center gap-1"><CheckCircle size={16} className="text-[#D80000]"/> Live Timing</span>
                         <span className="flex items-center gap-1"><CheckCircle size={16} className="text-[#D80000]"/> Relatórios PDF</span>
                     </div>
@@ -266,7 +266,7 @@ const Home = () => {
                         <Phone className="w-8 h-8 text-[#D80000] group-hover:text-white" />
                     </div>
                     <h3 className="font-bold text-lg uppercase italic text-white">WhatsApp</h3>
-                    <p className="text-gray-400 mt-2">(11) 94762-8294</p>
+                    <p className="text-gray-400 mt-2">(11) 94072-6320</p>
                 </a>
 
                 <a href="mailto:10tamura@gmail.com" className="bg-[#111] p-8 rounded-xl border border-gray-800 hover:border-[#D80000] group transition text-center flex flex-col items-center">
