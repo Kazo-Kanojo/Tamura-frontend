@@ -109,7 +109,7 @@ const Home = () => {
             </Link>
 
             {/* --- NOVO BOTÃO: VEJA OS RESULTADOS --- */}
-            <Link to="/register">
+            <Link to="/login">
                 <button className="bg-transparent border-2 border-white hover:bg-white hover:text-[#D80000] text-white px-8 py-4 rounded font-black uppercase text-lg tracking-widest transition-transform hover:-translate-y-1 shadow-lg flex items-center gap-2">
                     <List className="w-6 h-6" /> {/* Ícone opcional */}
                     Veja os Resultados
