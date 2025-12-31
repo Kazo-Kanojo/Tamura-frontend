@@ -60,9 +60,18 @@ const AdminDashboard = () => {
 // --- FUNÇÃO GERAR PDF INDIVIDUAL ---
 const generateIndividualPDF = (reg) => {
   const doc = new jsPDF();
-  const margin = 15;
-  const maxLineWidth = 175; // Largura segura para o texto não estourar a lateral
-  let y = 12; // Começando bem no topo
+  
+  // CONFIGURAÇÕES DE MARGEM MAIS SEGURAS
+  const marginLeft = 15;
+  const marginRight = 15;
+  const pageWidth = 210; // Largura A4 em mm
+  const maxContentWidth = pageWidth - marginLeft - marginRight; // 180mm
+  
+  // Largura para textos indentados (ex: avisos importantes)
+  const indent = 25;
+  const maxIndentedWidth = maxContentWidth - indent; 
+
+  let y = 12; 
 
   // --- CABEÇALHO ---
   doc.setFont("helvetica", "bold");
@@ -74,38 +83,38 @@ const generateIndividualPDF = (reg) => {
   y += 10;
 
   // LINHA 1
-  doc.text(`Equipe.: _________________`, margin, y);
+  doc.text(`Equipe.: _________________`, marginLeft, y);
   const dataNasc = reg.birth_date ? new Date(reg.birth_date).toLocaleDateString('pt-BR') : '____/____/______';
   doc.text(`Data de Nascimento.: ${dataNasc}`, 70, y);
   doc.text(`Apelido: _______________________`, 135, y);
 
   y += 8;
   // LINHA 2
-  doc.text(`Nome completo.: ${reg.pilot_name?.toUpperCase() || '____________________________________________________________________'}`, margin, y);
+  doc.text(`Nome completo.: ${reg.pilot_name?.toUpperCase() || '____________________________________________________________________'}`, marginLeft, y);
 
   y += 8;
   // LINHA 3
-  doc.text(`RG: ________________________`, margin, y);
+  doc.text(`RG: ________________________`, marginLeft, y);
   doc.text(`CPF: ${reg.cpf || '__________________________'}`, 70, y);
   doc.text(`Convênio Medico: _________________________`, 125, y);
 
   y += 8;
   // LINHA 4
-  doc.text(`Endereço: ____________________________________________________________________________________`, margin, y);
+  doc.text(`Endereço: ____________________________________________________________________________________`, marginLeft, y);
 
   y += 8;
   // LINHA 5
-  doc.text(`Tel.: ${reg.phone || '(      )_______________'}`, margin, y);
+  doc.text(`Tel.: ${reg.phone || '(      )_______________'}`, marginLeft, y);
   doc.text(`Tel. Urgência: (      ) ______________________`, 80, y);
 
   y += 10;
   // LINHA 6 (CHIP)
   const numCats = reg.categories ? reg.categories.split(',').length : '    ';
-  doc.text(`Total de categorias irá participar (  ${numCats}  )`, margin, y);
+  doc.text(`Total de categorias irá participar (  ${numCats}  )`, marginLeft, y);
   
   // Destaque do CHIP ID
   doc.setFont("helvetica", "bold");
-  doc.setFillColor(230, 230, 230); // Fundo cinza
+  doc.setFillColor(230, 230, 230); 
   doc.rect(130, y - 4, 65, 7, 'F');
   doc.text(`CHIP ID: ${reg.chip_id || '__________'}`, 132, y+1);
   doc.setFont("helvetica", "normal");
@@ -114,69 +123,71 @@ const generateIndividualPDF = (reg) => {
   // LINHA 7 (Categorias e Moto)
   const catsArray = reg.categories ? reg.categories.split(', ') : [];
   doc.setFontSize(9);
-  doc.text(`Categorias: ${catsArray.slice(0, 5).join(' | ') || '____________________________________________________'}`, margin, y);
+  doc.text(`Categorias: ${catsArray.slice(0, 5).join(' | ') || '____________________________________________________'}`, marginLeft, y);
   doc.text(`MOTO: ______________ # ${reg.pilot_number || '____'}`, 150, y);
 
   // --- TERMO DE RESPONSABILIDADE ---
   y += 12;
   doc.setFont("helvetica", "bold");
   doc.setFontSize(10);
-  doc.text("Termo de Responsabilidade", margin, y);
+  doc.text("Termo de Responsabilidade", marginLeft, y);
   
   y += 5;
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(7.5); // Fonte menor para caber tudo com segurança
+  doc.setFontSize(7.5); // Fonte pequena para caber
   
   const termoTexto = "Declaro para os devidos fins, que estou participando deste evento por minha livre e espontânea vontade e estou ciente que o Velocross, trata-se de uma atividade esportiva motorizada e sou conhecedor de todos os riscos envolvidos no motociclismo off Road. Declaro também que me encontro fisicamente, clinicamente apto a participar e não fiz uso de bebida alcoolica ou drogas. Concordo em observar e acatar qualquer decisão oficial dos organizadores do evento relativa a possibilidade de não terminá-lo NO TEMPO HABITUAL, por conta de chuvas, acidentes, etc. Assumo ainda todos os riscos competir na CORRIDAS E CAMPEONATOS DE VELOCROSS , isentando os seus organizadores bem como seus patrocinadores, apoiadores, Prefeitura Municipal, de quaisquer acidentes que eu venha a me envolver, durante as competições. contatos com outros participantes, efeito do clima, incluindo aqui alto calor e suas consequências, condições de tráfego e do circuito além de outras consequências que possam ter origem em minha falta de condicionamento físico para participar do mencionado evento. de parte das entidades/ pessoas aqui nominadas. Estou ciente que qualquer atendimento médico que for necessário ocasionado por acidente na competição será direcionado a rede publica de atendimento médico, “SUS”. Concedo ainda permissão aos organizadores do evento e a seus patrocinadores, a utilizarem fotografias, filmagens ou qualquer outra forma que mostre minha participação NAS CORRIDAS E CAMPEONATOS DE VELOCROSS, bem como utilizar das imagens para divulgação, prospecção, apresentação e outras finalidades da organização.";
   
-  // Quebra o texto respeitando a margem
-  const termoLines = doc.splitTextToSize(termoTexto, maxLineWidth);
-  doc.text(termoLines, margin, y);
+  // AQUI O CORRETOR: Força o texto a quebrar respeitando a largura máxima definida
+  const termoLines = doc.splitTextToSize(termoTexto, maxContentWidth);
+  doc.text(termoLines, marginLeft, y);
 
-  // Calcula onde o termo parou para continuar o aviso
   y += (termoLines.length * 3) + 6; 
 
   // --- IMPORTANTE ---
+  // AVISO 1
   doc.setFont("helvetica", "bold");
   doc.setFontSize(9); 
-  doc.setTextColor(180, 0, 0); // Vermelho Escuro
-  doc.text("IMPORTANTE:", margin, y);
+  doc.setTextColor(180, 0, 0); // Vermelho
+  doc.text("IMPORTANTE:", marginLeft, y);
   
   doc.setFont("helvetica", "normal");
   doc.setTextColor(0, 0, 0); // Preto
   
   const aviso1 = "Não será devolvido os valores pagos referente as inscrições em HIPOTESE alguma, bem como não será possível transferi-las para etapas futuras.";
-  const avisoLines1 = doc.splitTextToSize(aviso1, maxLineWidth - 25);
-  doc.text(avisoLines1, margin + 25, y);
+  // AQUI A CORREÇÃO CRÍTICA: Subtrai o recuo (indent) da largura disponível
+  const avisoLines1 = doc.splitTextToSize(aviso1, maxIndentedWidth); 
+  doc.text(avisoLines1, marginLeft + indent, y);
   
   y += (avisoLines1.length * 3.5) + 2;
 
-  // Linha "É PROIBIDO"
+  // AVISO 2 (PROIBIDO)
   doc.setFont("helvetica", "bold");
-  doc.text("É PROIBIDO", margin, y);
+  doc.text("É PROIBIDO", marginLeft, y);
   doc.setFont("helvetica", "normal");
   const aviso2 = " a transferência de inscrições do piloto para outro piloto. Caso não seja possível terminar a etapa devido as condições climáticas, condições da pista, quebra de horário,";
-  const avisoLines2 = doc.splitTextToSize(aviso2, maxLineWidth - 25); // Ajuste fino na largura
-  doc.text(avisoLines2, margin + 25, y);
+  const avisoLines2 = doc.splitTextToSize(aviso2, maxIndentedWidth); // Largura reduzida
+  doc.text(avisoLines2, marginLeft + indent, y);
 
   y += (avisoLines2.length * 3.5) + 2;
 
-  // Linha "NÃO HAVERÁ"
+  // AVISO 3 (NÃO HAVERÁ)
   doc.setFont("helvetica", "bold");
   doc.setTextColor(180, 0, 0);
-  doc.text("NÃO HAVERÁ", margin, y);
+  doc.text("NÃO HAVERÁ", marginLeft, y);
   doc.setTextColor(0, 0, 0);
   doc.setFont("helvetica", "normal");
   const aviso3 = " compensação ou devolução de valores pagos, as categorias não realizadas, terão pontuação dobrada na próxima etapa.";
-  doc.text(aviso3, margin + 25, y);
+  const avisoLines3 = doc.splitTextToSize(aviso3, maxIndentedWidth); // Largura reduzida
+  doc.text(avisoLines3, marginLeft + indent, y);
 
   // --- RODAPÉ / ASSINATURA ---
-  // Verifica se estamos muito em baixo na página
-  if (y > 260) y = 260; // Trava de segurança para não sumir
-  else y += 15; // Espaço normal se houver folga
+  // Trava de segurança para não imprimir fora da folha
+  if (y > 270) y = 270; 
+  else y += 15; 
 
   const hoje = new Date().toLocaleDateString('pt-BR');
-  doc.text(`São Paulo-SP, ${hoje}`, margin, y);
+  doc.text(`São Paulo-SP, ${hoje}`, marginLeft, y);
   
   doc.line(110, y, 190, y);
   y += 4;
