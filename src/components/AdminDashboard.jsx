@@ -61,53 +61,56 @@ const AdminDashboard = () => {
 const generateIndividualPDF = (reg) => {
   const doc = new jsPDF();
   
-  // CONFIGURAÇÕES DE MARGEM MAIS SEGURAS
-  const marginLeft = 15;
-  const marginRight = 15;
+  // Aumentei um pouco as margens laterais para ficar mais elegante
+  const marginLeft = 20;
+  const marginRight = 20;
   const pageWidth = 210; // Largura A4 em mm
-  const maxContentWidth = pageWidth - marginLeft - marginRight; // 180mm
+  const maxContentWidth = pageWidth - marginLeft - marginRight; // 170mm
   
-  // Largura para textos indentados (ex: avisos importantes)
+  // Largura para textos indentados
   const indent = 25;
   const maxIndentedWidth = maxContentWidth - indent; 
 
-  let y = 12; 
+  let y = 20; // Começa mais baixo na página (antes era 12)
 
   // --- CABEÇALHO ---
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(14);
+  doc.setFontSize(18); // Aumentado de 14 para 18
   doc.text("FICHA DE INSCRIÇÃO", 105, y, { align: "center" });
   
-  doc.setFontSize(10);
+  doc.setFontSize(12); // Fonte geral aumentada de 10 para 12
   doc.setFont("helvetica", "normal");
-  y += 10;
+  y += 15; // Espaço maior após título
+
+  const lineHeight = 12; // Espaço padrão entre linhas (antes era 8)
 
   // LINHA 1
   doc.text(`Equipe.: _________________`, marginLeft, y);
   const dataNasc = reg.birth_date ? new Date(reg.birth_date).toLocaleDateString('pt-BR') : '____/____/______';
-  doc.text(`Data de Nascimento.: ${dataNasc}`, 70, y);
-  doc.text(`Apelido: _______________________`, 135, y);
+  // Ajustei as posições horizontais (70->85, 135->145) para acomodar a fonte maior
+  doc.text(`Data de Nascimento.: ${dataNasc}`, 85, y);
+  doc.text(`Apelido: _______________________`, 145, y);
 
-  y += 8;
+  y += lineHeight;
   // LINHA 2
   doc.text(`Nome completo.: ${reg.pilot_name?.toUpperCase() || '____________________________________________________________________'}`, marginLeft, y);
 
-  y += 8;
+  y += lineHeight;
   // LINHA 3
   doc.text(`RG: ________________________`, marginLeft, y);
-  doc.text(`CPF: ${reg.cpf || '__________________________'}`, 70, y);
-  doc.text(`Convênio Medico: _________________________`, 125, y);
+  doc.text(`CPF: ${reg.cpf || '__________________________'}`, 85, y);
+  doc.text(`Convênio Médico: ___________________`, 145, y);
 
-  y += 8;
+  y += lineHeight;
   // LINHA 4
   doc.text(`Endereço: ____________________________________________________________________________________`, marginLeft, y);
 
-  y += 8;
+  y += lineHeight;
   // LINHA 5
   doc.text(`Tel.: ${reg.phone || '(      )_______________'}`, marginLeft, y);
-  doc.text(`Tel. Urgência: (      ) ______________________`, 80, y);
+  doc.text(`Tel. Urgência: (      ) ______________________`, 95, y);
 
-  y += 10;
+  y += 15; // Espaço extra antes do bloco do Chip
   // LINHA 6 (CHIP)
   const numCats = reg.categories ? reg.categories.split(',').length : '    ';
   doc.text(`Total de categorias irá participar (  ${numCats}  )`, marginLeft, y);
@@ -115,39 +118,39 @@ const generateIndividualPDF = (reg) => {
   // Destaque do CHIP ID
   doc.setFont("helvetica", "bold");
   doc.setFillColor(230, 230, 230); 
-  doc.rect(130, y - 4, 65, 7, 'F');
-  doc.text(`CHIP ID: ${reg.chip_id || '__________'}`, 132, y+1);
+  doc.rect(140, y - 5, 50, 8, 'F'); // Ajustado tamanho e posição
+  doc.text(`CHIP ID: ${reg.chip_id || '__________'}`, 142, y+1);
   doc.setFont("helvetica", "normal");
 
-  y += 9;
+  y += 12;
   // LINHA 7 (Categorias e Moto)
   const catsArray = reg.categories ? reg.categories.split(', ') : [];
-  doc.setFontSize(9);
+  doc.setFontSize(11); // Fonte de categorias aumentada
   doc.text(`Categorias: ${catsArray.slice(0, 5).join(' | ') || '____________________________________________________'}`, marginLeft, y);
-  doc.text(`MOTO: ______________ # ${reg.pilot_number || '____'}`, 150, y);
+  doc.text(`MOTO: ______________ # ${reg.pilot_number || '____'}`, 140, y);
 
   // --- TERMO DE RESPONSABILIDADE ---
-  y += 12;
+  y += 20; // Espaço maior antes do termo
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(10);
+  doc.setFontSize(12); // Título do termo maior (era 10)
   doc.text("Termo de Responsabilidade", marginLeft, y);
   
-  y += 5;
+  y += 7;
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(7.5); // Fonte pequena para caber
+  doc.setFontSize(10); // Texto do termo aumentado de 7.5 para 10 (vai ocupar bem mais espaço)
   
   const termoTexto = "Declaro para os devidos fins, que estou participando deste evento por minha livre e espontânea vontade e estou ciente que o Velocross, trata-se de uma atividade esportiva motorizada e sou conhecedor de todos os riscos envolvidos no motociclismo off Road. Declaro também que me encontro fisicamente, clinicamente apto a participar e não fiz uso de bebida alcoolica ou drogas. Concordo em observar e acatar qualquer decisão oficial dos organizadores do evento relativa a possibilidade de não terminá-lo NO TEMPO HABITUAL, por conta de chuvas, acidentes, etc. Assumo ainda todos os riscos competir na CORRIDAS E CAMPEONATOS DE VELOCROSS , isentando os seus organizadores bem como seus patrocinadores, apoiadores, Prefeitura Municipal, de quaisquer acidentes que eu venha a me envolver, durante as competições. contatos com outros participantes, efeito do clima, incluindo aqui alto calor e suas consequências, condições de tráfego e do circuito além de outras consequências que possam ter origem em minha falta de condicionamento físico para participar do mencionado evento. de parte das entidades/ pessoas aqui nominadas. Estou ciente que qualquer atendimento médico que for necessário ocasionado por acidente na competição será direcionado a rede publica de atendimento médico, “SUS”. Concedo ainda permissão aos organizadores do evento e a seus patrocinadores, a utilizarem fotografias, filmagens ou qualquer outra forma que mostre minha participação NAS CORRIDAS E CAMPEONATOS DE VELOCROSS, bem como utilizar das imagens para divulgação, prospecção, apresentação e outras finalidades da organização.";
   
-  // AQUI O CORRETOR: Força o texto a quebrar respeitando a largura máxima definida
   const termoLines = doc.splitTextToSize(termoTexto, maxContentWidth);
   doc.text(termoLines, marginLeft, y);
 
-  y += (termoLines.length * 3) + 6; 
+  // Multiplicador aumentado para dar mais entrelinha no texto do termo
+  y += (termoLines.length * 5) + 8; 
 
   // --- IMPORTANTE ---
   // AVISO 1
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(9); 
+  doc.setFontSize(11); // Aumentado de 9 para 11
   doc.setTextColor(180, 0, 0); // Vermelho
   doc.text("IMPORTANTE:", marginLeft, y);
   
@@ -155,21 +158,20 @@ const generateIndividualPDF = (reg) => {
   doc.setTextColor(0, 0, 0); // Preto
   
   const aviso1 = "Não será devolvido os valores pagos referente as inscrições em HIPOTESE alguma, bem como não será possível transferi-las para etapas futuras.";
-  // AQUI A CORREÇÃO CRÍTICA: Subtrai o recuo (indent) da largura disponível
   const avisoLines1 = doc.splitTextToSize(aviso1, maxIndentedWidth); 
   doc.text(avisoLines1, marginLeft + indent, y);
   
-  y += (avisoLines1.length * 3.5) + 2;
+  y += (avisoLines1.length * 5) + 4;
 
   // AVISO 2 (PROIBIDO)
   doc.setFont("helvetica", "bold");
   doc.text("É PROIBIDO", marginLeft, y);
   doc.setFont("helvetica", "normal");
   const aviso2 = " a transferência de inscrições do piloto para outro piloto. Caso não seja possível terminar a etapa devido as condições climáticas, condições da pista, quebra de horário,";
-  const avisoLines2 = doc.splitTextToSize(aviso2, maxIndentedWidth); // Largura reduzida
+  const avisoLines2 = doc.splitTextToSize(aviso2, maxIndentedWidth); 
   doc.text(avisoLines2, marginLeft + indent, y);
 
-  y += (avisoLines2.length * 3.5) + 2;
+  y += (avisoLines2.length * 5) + 4;
 
   // AVISO 3 (NÃO HAVERÁ)
   doc.setFont("helvetica", "bold");
@@ -178,20 +180,27 @@ const generateIndividualPDF = (reg) => {
   doc.setTextColor(0, 0, 0);
   doc.setFont("helvetica", "normal");
   const aviso3 = " compensação ou devolução de valores pagos, as categorias não realizadas, terão pontuação dobrada na próxima etapa.";
-  const avisoLines3 = doc.splitTextToSize(aviso3, maxIndentedWidth); // Largura reduzida
+  const avisoLines3 = doc.splitTextToSize(aviso3, maxIndentedWidth); 
   doc.text(avisoLines3, marginLeft + indent, y);
 
   // --- RODAPÉ / ASSINATURA ---
-  // Trava de segurança para não imprimir fora da folha
-  if (y > 270) y = 270; 
-  else y += 15; 
+  // Empurrar a assinatura para o final da página (A4 tem ~297mm de altura)
+  const footerY = 270;
+  
+  // Se o texto terminou muito antes do fim, forçamos o rodapé lá embaixo
+  if (y < footerY - 20) {
+      y = footerY;
+  } else {
+      // Se o texto ficou grande e já está perto do fim, damos apenas uma margem segura
+      y += 20;
+  }
 
   const hoje = new Date().toLocaleDateString('pt-BR');
   doc.text(`São Paulo-SP, ${hoje}`, marginLeft, y);
   
-  doc.line(110, y, 190, y);
-  y += 4;
-  doc.setFontSize(8);
+  doc.line(110, y, 190, y); // Linha da assinatura
+  y += 5;
+  doc.setFontSize(10);
   doc.text("Assinatura do Piloto ou Responsável", 150, y, { align: "center" });
 
   doc.save(`Ficha_${reg.pilot_name.replace(/\s+/g, '_')}.pdf`);
