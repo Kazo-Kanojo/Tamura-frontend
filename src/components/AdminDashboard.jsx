@@ -59,85 +59,86 @@ const AdminDashboard = () => {
 
 // --- FUNÇÃO GERAR PDF INDIVIDUAL ---
   const generateIndividualPDF = (reg) => {
-    const doc = new jsPDF();
-    const margin = 14;
-    let y = 20;
+  const doc = new jsPDF();
+  const margin = 15;
+  let y = 20;
 
-    // Configurações de Estilo
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(16);
-    doc.text("FICHA DE INSCRIÇÃO", 105, y, { align: "center" });
-    
-    y += 15;
-    doc.setFontSize(10);
-    
-    // Linha 1: Equipe, Nascimento, Apelido
-    doc.text(`Equipe: ${reg.team_name || '_________________'}`, margin, y);
-    doc.text(`Data de Nascimento: ${reg.birth_date ? new Date(reg.birth_date).toLocaleDateString() : '____/____/______'}`, 80, y);
-    doc.text(`Apelido: ${reg.nickname || '___________________'}`, 150, y);
-    
-    y += 10;
-    // Linha 2: Nome Completo
-    doc.text(`Nome completo: ${reg.pilot_name || '____________________________________________________________________'}`, margin, y);
-    
-    y += 10;
-    // Linha 3: RG, CPF, Convênio
-    doc.text(`RG: ${reg.rg || '_________________'}`, margin, y);
-    doc.text(`CPF: ${reg.cpf || '_________________'}`, 75, y);
-    doc.text(`Convênio Médico: ${reg.medical_insurance || '_________________'}`, 135, y);
-    
-    y += 10;
-    // Linha 4: Endereço
-    doc.text(`Endereço: ${reg.address || '__________________________________________________________________________'}`, margin, y);
-    
-    y += 10;
-    // Linha 5: Tels
-    doc.text(`Tel: ${reg.phone || '(  ) _________'}`, margin, y);
-    doc.text(`Tel. Urgência: ${reg.emergency_phone || '(  ) _________'}`, 90, y);
-    
-    y += 15;
-    doc.text(`Total de categorias: ( ${reg.categories?.split(',').length || '  '} )`, margin, y);
-    
-    y += 10;
-    // Linhas de Categorias e Moto
-    doc.text(`Categorias: ${reg.categories || '____________________________________________________________________'}`, margin, y);
-    y += 8;
-    doc.text(`MOTO: ${reg.bike_model || '________________'}  # ${reg.pilot_number || '____'}`, margin, y);
+  // Título Centralizado
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(14);
+  doc.text("FICHA DE INSCRIÇÃO", 105, y, { align: "center" });
+  
+  // Dados do Piloto (Linha 1)
+  y += 15;
+  doc.setFontSize(10);
+  doc.text(`Equipe.: _________________`, margin, y);
+  const dataNasc = reg.birth_date ? new Date(reg.birth_date).toLocaleDateString('pt-BR') : '____/____/______';
+  doc.text(`Data de Nascimento.: ${dataNasc}`, 75, y);
+  doc.text(`Apelido: _______________________`, 140, y);
 
-    y += 15;
-    // Termo de Responsabilidade
-    doc.setFontSize(11);
-    doc.text("Termo de Responsabilidade", margin, y);
-    y += 6;
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(8);
-    
-    const termo = "Declaro para os devidos fins, que estou participando deste evento por minha livre e espontânea vontade e estou ciente que o Velocross trata-se de uma atividade esportiva motorizada e sou conhecedor de todos os riscos envolvidos no motociclismo off Road. Declaro também que me encontro fisicamente e clinicamente apto a participar e não fiz uso de bebida alcoólica ou drogas. Concordo em observar e acatar qualquer decisão oficial dos organizadores. Assumo todos os riscos de competir, isentando organizadores, patrocinadores e a Prefeitura Municipal de quaisquer acidentes. Estou ciente que o atendimento médico será via SUS. Concedo permissão para uso de minha imagem em fotografias e filmagens para fins de divulgação.";
-    
-    const splitTermo = doc.splitTextToSize(termo, 180);
-    doc.text(splitTermo, margin, y);
-    
-    y += (splitTermo.length * 4) + 5;
-    
-    // Importante
-    doc.setFont("helvetica", "bold");
-    doc.text("IMPORTANTE:", margin, y);
-    doc.setFont("helvetica", "normal");
-    const aviso = "Não haverá devolução de valores em hipótese alguma. É PROIBIDO a transferência de inscrição para outro piloto.";
-    doc.text(aviso, margin + 25, y);
-    
-    y += 20;
-    // Data e Assinatura
-    const dataHoje = new Date().toLocaleDateString();
-    doc.text(`São Paulo-SP, ${dataHoje}`, margin, y);
-    
-    y += 15;
-    doc.line(margin + 80, y, margin + 180, y); // Linha da assinatura
-    doc.text("Assinatura do Piloto ou Responsável", margin + 105, y + 5);
+  // Nome Completo (Linha 2)
+  y += 10;
+  doc.text(`Nome completo.: ${reg.pilot_name?.toUpperCase() || '__________________________________________________________________________________'}`, margin, y);
 
-    doc.save(`Ficha_${reg.pilot_name.replace(/\s+/g, '_')}.pdf`);
+  // Documentos (Linha 3)
+  y += 10;
+  doc.text(`RG: ________________________`, margin, y);
+  doc.text(`CPF: ${reg.cpf || '__________________________'}`, 75, y);
+  doc.text(`Convênio Medico: _________________________`, 130, y);
+
+  // Endereço (Linha 4)
+  y += 10;
+  doc.text(`Endereço: ________________________________________________________________________________________`, margin, y);
+
+  // Telefones (Linha 5)
+  y += 10;
+  doc.text(`Tel.: ${reg.phone || '(      )_______________'}`, margin, y);
+  doc.text(`Importante Tel. de acompanhantes em caso de urgência (      ) ______________________`, 70, y);
+
+  // Categorias (Linha 6 e 7)
+  y += 15;
+  const numCats = reg.categories ? reg.categories.split(',').length : '    ';
+  doc.text(`Total de categorias irá participar (  ${numCats}  )`, margin, y);
+  
+  y += 10;
+  // Mapeia as categorias para as linhas 1ª, 2ª...
+  const catsArray = reg.categories ? reg.categories.split(', ') : [];
+  const line1 = catsArray.slice(0, 6).map((c, i) => `${i+1}ª ${c}`).join('  ');
+  doc.text(`${line1 || '1ª_________ 2ª __________ 3ª_________4ª_________5ª_________6ª_________' }`, margin, y);
+  doc.text(`MOTO: ______________ # ${reg.pilot_number || '____'}`, 150, y);
+  
+  // Termo de Responsabilidade (Texto Fiel)
+  y += 20;
+  doc.setFont("helvetica", "bold");
+  doc.text("Termo de Responsabilidade", margin, y);
+  
+  y += 6;
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(7.5); // Fonte menor para caber o texto longo
+  const termoTexto = "Declaro para os devidos fins, que estou participando deste evento por minha livre e espontânea vontade e estou ciente que o Velocross, trata-se de uma atividade esportiva motorizada e sou conhecedor de todos os riscos envolvidos no motociclismo off Road. Declaro também que me encontro fisicamente, clinicamente apto a participar e não fiz uso de bebida alcoolica ou drogas. Concordo em observar e acatar qualquer decisão oficial dos organizadores do evento relativa a possibilidade de não terminá-lo NO TEMPO HABITUAL, por conta de chuvas, acidentes, etc. Assumo ainda todos os riscos competir na CORRIDAS E CAMPEONATOS DE VELOCROSS , isentando os seus organizadores bem como seus patrocinadores, apoiadores, Prefeitura Municipal, de quaisquer acidentes que eu venha a me envolver, durante as competições. contatos com outros participantes, efeito do clima, incluindo aqui alto calor e suas consequências, condições de tráfego e do circuito além de outras consequências que possam ter origem em minha falta de condicionamento físico para participar do mencionado evento. de parte das entidades/ pessoas aqui nominadas. Estou ciente que qualquer atendimento médico que for necessário ocasionado por acidente na competição será direcionado a rede publica de atendimento médico, “SUS”. Concedo ainda permissão aos organizadores do evento e a seus patrocinadores, a utilizarem fotografias, filmagens ou qualquer outra forma que mostre minha participação NAS CORRIDAS E CAMPEONATOS DE VELOCROSS, bem como utilizar das imagens para divulgação, prospecção, apresentação e outras finalidades da organização.";
+  
+  const textLines = doc.splitTextToSize(termoTexto, 180);
+  doc.text(textLines, margin, y);
+
+  // Rodapé: Importante e Assinatura
+  y += (textLines.length * 4) + 5;
+  doc.setFont("helvetica", "bold");
+  doc.text("IMPORTANTE:", margin, y);
+  doc.setFont("helvetica", "normal");
+  doc.text("Não será devolvido os valores pagos referente as inscrições em HIPOTESE alguma, bem como não será possível transferi-las para etapas futuras.", margin + 25, y);
+  
+  y += 15;
+  const hoje = new Date().toLocaleDateString('pt-BR');
+  doc.text(`São Paulo-SP, ${hoje}`, margin, y);
+  
+  y += 10;
+  doc.line(110, y, 190, y); // Linha da assinatura
+  y += 5;
+  doc.setFontSize(9);
+  doc.text("Assinatura do Piloto ou Responsável", 150, y, { align: "center" });
+
+  doc.save(`Ficha_${reg.pilot_name.replace(/\s+/g, '_')}.pdf`);
 };
-
   // --- HELPER: FORMATAR DATA PARA INPUT (YYYY-MM-DD) ---
   const formatDateForInput = (dateValue) => {
     if (!dateValue) return '';
@@ -983,8 +984,8 @@ const AdminDashboard = () => {
 
 
 
-                                                    <button onClick={() => generateIndividualPDF(reg)} className="p-2 rounded text-gray-400 hover:text-blue-400 hover:bg-blue-400/10" title="Imprimir Ficha de Inscrição">
-                                                        <Printer size={16}/>
+                                                    <button onClick={() => generateIndividualPDF(reg)} className="p-2 rounded text-gray-400 hover:text-blue-500 hover:bg-blue-500/10"  title="Imprimir Ficha de Inscrição">
+                                                            <Printer size={16}/>
                                                     </button>
                                                     <button onClick={() => handleEditRegistrationClick(reg)} className="p-2 rounded text-gray-400 hover:text-yellow-400 hover:bg-yellow-400/10" title="Editar Inscrição">
                                                         <Edit3 size={16}/>
