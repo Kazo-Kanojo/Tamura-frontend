@@ -104,7 +104,7 @@ const generateIndividualPDF = (reg) => {
   doc.setFont("helvetica", "bold");
   doc.setFillColor(240, 240, 240); // Fundo cinza claro para o chip
   doc.rect(130, y - 5, 65, 8, 'F');
-  doc.text(`CHIP ID (OBRIGATÓRIO): ${reg.chip_id || '__________'}`, 132, y);
+  doc.text(`CHIP ID: ${reg.chip_id || '__________'}`, 132, y);
   doc.setFont("helvetica", "normal");
 
   y += 10;
