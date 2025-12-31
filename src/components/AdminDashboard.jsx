@@ -60,49 +60,51 @@ const AdminDashboard = () => {
 // --- FUNÇÃO GERAR PDF INDIVIDUAL ---
 const generateIndividualPDF = (reg) => {
   const doc = new jsPDF();
-  const margin = 15;
-  let y = 15; // Começa um pouco mais alto para ganhar espaço
+  const margin = 14; 
+  let y = 15; 
 
-  // Título
+  // --- CABEÇALHO ---
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(14);
-  doc.text("FICHA DE INSCRIÇÃO", 105, y, { align: "center" });
+  doc.setFontSize(16);
+  doc.text("FICHA DE INSCRIÇÃO", 105, y, { align: "center" }); // [cite: 1]
   
   doc.setFontSize(10);
+  doc.setFont("helvetica", "normal");
   y += 12;
-  // Linha 1: Equipe, Nasc, Apelido
-  doc.text(`Equipe.: _________________`, margin, y);
+
+  // Linha 1: Equipe, Nascimento, Apelido
+  doc.text(`Equipe.: _________________`, margin, y); // [cite: 2]
   const dataNasc = reg.birth_date ? new Date(reg.birth_date).toLocaleDateString('pt-BR') : '____/____/______';
-  doc.text(`Data de Nascimento.: ${dataNasc}`, 70, y);
-  doc.text(`Apelido: _______________________`, 135, y);
+  doc.text(`Data de Nascimento.: ${dataNasc}`, 70, y); // [cite: 2]
+  doc.text(`Apelido: _______________________`, 135, y); // [cite: 2]
 
   y += 9;
   // Linha 2: Nome Completo
-  doc.text(`Nome completo.: ${reg.pilot_name?.toUpperCase() || '____________________________________________________________________'}`, margin, y);
+  doc.text(`Nome completo.: ${reg.pilot_name?.toUpperCase() || '____________________________________________________________________'}`, margin, y); // [cite: 3]
 
   y += 9;
   // Linha 3: RG, CPF, Convênio
-  doc.text(`RG: ________________________`, margin, y);
-  doc.text(`CPF: ${reg.cpf || '__________________________'}`, 70, y);
-  doc.text(`Convênio Medico: _________________________`, 125, y);
+  doc.text(`RG: ________________________`, margin, y); // [cite: 4]
+  doc.text(`CPF: ${reg.cpf || '__________________________'}`, 70, y); // [cite: 4]
+  doc.text(`Convênio Medico: _________________________`, 125, y); // [cite: 4]
 
   y += 9;
   // Linha 4: Endereço
-  doc.text(`Endereço: ____________________________________________________________________________________`, margin, y);
+  doc.text(`Endereço: ____________________________________________________________________________________`, margin, y); // [cite: 5]
 
   y += 9;
   // Linha 5: Telefones
-  doc.text(`Tel.: ${reg.phone || '(      )_______________'}`, margin, y);
-  doc.text(`Tel. Urgência: (      ) ______________________`, 80, y);
+  doc.text(`Tel.: ${reg.phone || '(      )_______________'}`, margin, y); // [cite: 6]
+  doc.text(`Importante Tel. de acompanhantes em caso de urgência (      ) ______________________`, 80, y); // [cite: 6]
 
   y += 12;
-  // Linha 6: Categorias e CHIP (OBRIGATÓRIO)
+  // Linha 6: Total de categorias e CHIP
   const numCats = reg.categories ? reg.categories.split(',').length : '    ';
-  doc.text(`Total de categorias: (  ${numCats}  )`, margin, y);
+  doc.text(`Total de categorias irá participar (  ${numCats}  )`, margin, y); // [cite: 7]
   
-  // DESTAQUE PARA O CHIP ID
+  // Destaque do CHIP ID
   doc.setFont("helvetica", "bold");
-  doc.setFillColor(240, 240, 240); // Fundo cinza claro para o chip
+  doc.setFillColor(230, 230, 230); // Fundo cinza claro
   doc.rect(130, y - 5, 65, 8, 'F');
   doc.text(`CHIP ID: ${reg.chip_id || '__________'}`, 132, y);
   doc.setFont("helvetica", "normal");
@@ -112,39 +114,66 @@ const generateIndividualPDF = (reg) => {
   const catsArray = reg.categories ? reg.categories.split(', ') : [];
   const line1 = catsArray.slice(0, 5).join(' | ');
   doc.setFontSize(9);
-  doc.text(`Categorias: ${line1 || '____________________________________________________________________'}`, margin, y);
-  doc.text(`MOTO: ______________ # ${reg.pilot_number || '____'}`, 155, y);
+  doc.text(`Categorias: ${line1 || '1ª_________ 2ª __________ 3ª_________4ª_________5ª_________6ª_________'}`, margin, y); // [cite: 8]
+  doc.text(`MOTO: ______________ # ${reg.pilot_number || '____'}`, 150, y); // [cite: 8]
 
-  y += 12;
-  // Termo de Responsabilidade (Reduzido para 7pt para garantir espaço no fim)
+  // --- TERMO DE RESPONSABILIDADE ---
+  y += 15;
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(10);
-  doc.text("Termo de Responsabilidade", margin, y);
+  doc.setFontSize(11); // Aumentado conforme solicitado
+  doc.text("Termo de Responsabilidade", margin, y); // 
   
-  y += 5;
+  y += 6;
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(7); 
-  const termoTexto = "Declaro para os devidos fins, que estou participando deste evento por minha livre e espontânea vontade e estou ciente que o Velocross, trata-se de uma atividade esportiva motorizada e sou conhecedor de todos os riscos envolvidos no motociclismo off Road. Declaro também que me encontro fisicamente, clinicamente apto a participar e não fiz uso de bebida alcoolica ou drogas. Concordo em observar e acatar qualquer decisão oficial dos organizadores do evento relativa a possibilidade de não terminá-lo NO TEMPO HABITUAL, por conta de chuvas, acidentes, etc. Assumo ainda todos os riscos competir na CORRIDAS E CAMPEONATOS DE  VELOCROSS, isentando os seus organizadores bem como seus patrocinadores, apoiadores, Prefeitura Municipal,  de quaisquer acidentes que eu venha a me envolver, durante as competições. contatos com outros participantes, efeito do clima, incluindo aqui alto calor e suas consequências, condições de tráfego e do circuito além de outras consequências que possam ter origem em minha falta de condicionamento físico para participar do mencionado evento. de parte das entidades/ pessoas aqui  nominadas. Estou ciente que qualquer atendimento médico que for necessário ocasionado por acidente na competição será direcionado a rede publica de atendimento médico, “SUS”. Concedo ainda permissão aos organizadores do evento e a seus patrocinadores, a utilizarem fotografias, filmagens ou qualquer outra forma que mostre minha participação NAS CORRIDAS E CAMPEONATOS DE VELOCROSS, bem como utilizar das imagens para divulgação, prospecção, apresentação e outras finalidades da organização.";
+  doc.setFontSize(9); // Aumentado para leitura melhor
+  
+  // Texto fiel ao DOCX
+  const termoTexto = "Declaro para os devidos fins, que estou participando deste evento por minha livre e espontânea vontade e estou ciente que o Velocross, trata-se de uma atividade esportiva motorizada e sou conhecedor de todos os riscos envolvidos no motociclismo off Road. Declaro também que me encontro fisicamente, clinicamente apto a participar e não fiz uso de bebida alcoolica ou drogas. Concordo em observar e acatar qualquer decisão oficial dos organizadores do evento relativa a possibilidade de não terminá-lo NO TEMPO HABITUAL, por conta de chuvas, acidentes, etc. Assumo ainda todos os riscos competir na CORRIDAS E CAMPEONATOS DE VELOCROSS , isentando os seus organizadores bem como seus patrocinadores, apoiadores, Prefeitura Municipal, de quaisquer acidentes que eu venha a me envolver, durante as competições. contatos com outros participantes, efeito do clima, incluindo aqui alto calor e suas consequências, condições de tráfego e do circuito além de outras consequências que possam ter origem em minha falta de condicionamento físico para participar do mencionado evento. de parte das entidades/ pessoas aqui nominadas. Estou ciente que qualquer atendimento médico que for necessário ocasionado por acidente na competição será direcionado a rede publica de atendimento médico, “SUS”. Concedo ainda permissão aos organizadores do evento e a seus patrocinadores, a utilizarem fotografias, filmagens ou qualquer outra forma que mostre minha participação NAS CORRIDAS E CAMPEONATOS DE VELOCROSS, bem como utilizar das imagens para divulgação, prospecção, apresentação e outras finalidades da organização."; // 
   
   const textLines = doc.splitTextToSize(termoTexto, 180);
   doc.text(textLines, margin, y);
 
-  y += (textLines.length * 3.5) + 5;
-  // Importante e Regras
+  // --- IMPORTANTE (COM DESTAQUE EM VERMELHO E QUEBRAS DE LINHA) ---
+  y += (textLines.length * 4) + 8;
+  
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(8);
-  doc.text("IMPORTANTE:", margin, y);
+  doc.setFontSize(10); // Aumentado
+  doc.setTextColor(200, 0, 0); // VERMELHO ESCURO para destaque
+  doc.text("IMPORTANTE:", margin, y); // 
+  
   doc.setFont("helvetica", "normal");
-  doc.text("Não será devolvido os valores pagos referente as inscrições em HIPOTESE alguma, bem como não será possível transferi-las para etapas futuras.   É PROIBIDOa transferência de inscrições do piloto para outro piloto. Caso não seja possível terminar a etapa devido as condições climáticas, condições da pista, quebra de horário, NÃO HAVERÁ compensação ou devolução de valores pagos, as categorias não realizadas, terão pontuação dobrada na próxima etapa.", margin + 22, y);
+  doc.setTextColor(0, 0, 0); // Volta para preto
   
-  y += 18; // Espaço final para assinatura
+  const avisoParte1 = "Não será devolvido os valores pagos referente as inscrições em HIPOTESE alguma, bem como não será possível transferi-las para etapas futuras."; // 
+  doc.text(avisoParte1, margin + 26, y);
+  
+  y += 5;
+  const avisoParte2 = "É PROIBIDO a transferência de inscrições do piloto para outro piloto. Caso não seja possível terminar a etapa devido as condições climáticas, condições da pista, quebra de horário,"; // 
+  // Destaque "É PROIBIDO" em vermelho no meio do texto (simulado desenhando separado ou deixando tudo preto com negrito)
+  // Para simplificar e manter a formatação limpa:
+  doc.setFont("helvetica", "bold");
+  doc.text("É PROIBIDO", margin, y);
+  doc.setFont("helvetica", "normal");
+  doc.text(" a transferência de inscrições do piloto para outro piloto. Caso não seja possível terminar a etapa devido as condições climáticas, condições da pista, quebra de horário,", margin + 25, y);
+  
+  y += 5;
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(200, 0, 0); // Vermelho novamente
+  doc.text("NÃO HAVERÁ", margin, y); // 
+  doc.setTextColor(0, 0, 0);
+  doc.setFont("helvetica", "normal");
+  doc.text(" compensação ou devolução de valores pagos, as categorias não realizadas, terão pontuação dobrada na próxima etapa.", margin + 25, y); // 
+
+  // --- ASSINATURA ---
+  y += 20; // Espaço final
   const hoje = new Date().toLocaleDateString('pt-BR');
-  doc.text(`São Paulo-SP, ${hoje}`, margin, y);
+  doc.text(`São Paulo-SP, ${hoje}`, margin, y); // 
   
-  doc.line(110, y, 190, y); 
-  y += 4;
-  doc.setFontSize(8);
-  doc.text("Assinatura do Piloto ou Responsável", 150, y, { align: "center" });
+  // Linha de assinatura
+  doc.line(110, y, 190, y);
+  y += 5;
+  doc.setFontSize(9);
+  doc.text("Assinatura do Piloto ou Responsável", 150, y, { align: "center" }); // 
 
   doc.save(`Ficha_${reg.pilot_name.replace(/\s+/g, '_')}.pdf`);
 };
