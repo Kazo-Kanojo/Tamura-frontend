@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom"; // Importe useNavigate
 import Navbar from "./Navbar";
 import EventCard from "./EventCard";
 import Footer from "./Footer";
@@ -7,6 +7,7 @@ import { Timer, Award, Users, CheckCircle, Phone, Mail, MapPin, Share, Download,
 import API_URL from "../api"; 
 
 const Home = () => {
+  const navigate = useNavigate(); // Hook de navegação
   const [events, setEvents] = useState([]);
 
   // --- ESTADOS PARA O PWA ---
@@ -16,6 +17,24 @@ const Home = () => {
   const [isStandalone, setIsStandalone] = useState(false);
 
   useEffect(() => {
+    // 0. VERIFICAÇÃO DE AUTO-LOGIN (Adicionado)
+    // Se o usuário já estiver logado, redireciona para a área correta e não mostra a Home
+    const userStorage = localStorage.getItem('user');
+    if (userStorage) {
+      try {
+        const user = JSON.parse(userStorage);
+        if (user.role === 'admin') {
+          navigate('/admin');
+          return; // Para a execução aqui para evitar carregamentos desnecessários
+        } else {
+          navigate('/dashboard');
+          return;
+        }
+      } catch (e) {
+        localStorage.removeItem('user'); // Limpa se estiver corrompido
+      }
+    }
+
     // 1. Buscar Eventos
     fetch(`${API_URL}/api/stages`)
       .then(res => res.json())
@@ -48,7 +67,7 @@ const Home = () => {
     return () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
     };
-  }, []);
+  }, [navigate]); // Adicionado navigate nas dependências
 
   // Função para instalar no Android/Desktop
   const handleInstallClick = async () => {
