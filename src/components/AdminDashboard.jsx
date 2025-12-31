@@ -74,12 +74,12 @@ const generateIndividualPDF = (reg) => {
   let y = 20; // Começa mais baixo na página (antes era 12)
 
   // --- CABEÇALHO ---
-  doc.setFont("Calibri", "bold");
+  doc.setFont("helvetica", "bold");
   doc.setFontSize(18); // Aumentado de 14 para 18
   doc.text("FICHA DE INSCRIÇÃO", 105, y, { align: "center" });
   
   doc.setFontSize(12); // Fonte geral aumentada de 10 para 12
-  doc.setFont("Calibri", "normal");
+  doc.setFont("helvetica", "normal");
   y += 15; // Espaço maior após título
 
   const lineHeight = 12; // Espaço padrão entre linhas (antes era 8)
@@ -116,11 +116,11 @@ const generateIndividualPDF = (reg) => {
   doc.text(`Total de categorias irá participar (  ${numCats}  )`, marginLeft, y);
   
   // Destaque do CHIP ID
-  doc.setFont("Calibri", "bold");
+  doc.setFont("helvetica", "bold");
   doc.setFillColor(230, 230, 230); 
   doc.rect(140, y - 5, 50, 8, 'F'); // Ajustado tamanho e posição
   doc.text(`CHIP ID: ${reg.chip_id || '__________'}`, 142, y+1);
-  doc.setFont("Calibri", "normal");
+  doc.setFont("helvetica", "normal");
 
   y += 12;
   // LINHA 7 (Categorias e Moto)
@@ -131,12 +131,12 @@ const generateIndividualPDF = (reg) => {
 
   // --- TERMO DE RESPONSABILIDADE ---
   y += 20; // Espaço maior antes do termo
-  doc.setFont("Calibri", "bold");
+  doc.setFont("helvetica", "bold");
   doc.setFontSize(12); // Título do termo maior (era 10)
   doc.text("Termo de Responsabilidade", marginLeft, y);
   
   y += 7;
-  doc.setFont("Times New Roman", "normal");
+  doc.setFont("Times", "normal");
   doc.setFontSize(10); 
   
   const termoTexto = "Declaro para os devidos fins, que estou participando deste evento por minha livre e espontânea vontade e estou ciente que o Velocross, trata-se de uma atividade esportiva motorizada e sou conhecedor de todos os riscos envolvidos no motociclismo off Road. Declaro também que me encontro fisicamente, clinicamente apto a participar e não fiz uso de bebida alcoolica ou drogas. Concordo em observar e acatar qualquer decisão oficial dos organizadores do evento relativa a possibilidade de não terminá-lo NO TEMPO HABITUAL, por conta de chuvas, acidentes, etc. Assumo ainda todos os riscos competir na CORRIDAS E CAMPEONATOS DE VELOCROSS , isentando os seus organizadores bem como seus patrocinadores, apoiadores, Prefeitura Municipal, de quaisquer acidentes que eu venha a me envolver, durante as competições. contatos com outros participantes, efeito do clima, incluindo aqui alto calor e suas consequências, condições de tráfego e do circuito além de outras consequências que possam ter origem em minha falta de condicionamento físico para participar do mencionado evento. de parte das entidades/ pessoas aqui nominadas. Estou ciente que qualquer atendimento médico que for necessário ocasionado por acidente na competição será direcionado a rede publica de atendimento médico, “SUS”. Concedo ainda permissão aos organizadores do evento e a seus patrocinadores, a utilizarem fotografias, filmagens ou qualquer outra forma que mostre minha participação NAS CORRIDAS E CAMPEONATOS DE VELOCROSS, bem como utilizar das imagens para divulgação, prospecção, apresentação e outras finalidades da organização.";
@@ -149,12 +149,12 @@ const generateIndividualPDF = (reg) => {
 
   // --- IMPORTANTE ---
   // AVISO 1
-  doc.setFont("Calibri", "bold");
+  doc.setFont("helvetica", "bold");
   doc.setFontSize(11); // Aumentado de 9 para 11
   doc.setTextColor(180, 0, 0); // Vermelho
   doc.text("IMPORTANTE:", marginLeft, y);
   
-  doc.setFont("Calibri", "normal");
+  doc.setFont("helvetica", "normal");
   doc.setTextColor(0, 0, 0); // Preto
   
   const aviso1 = " Não será devolvido os valores pagos referente as inscrições em HIPOTESE alguma, bem como não será possível transferi-las para etapas futuras.";
@@ -164,9 +164,9 @@ const generateIndividualPDF = (reg) => {
   y += (avisoLines1.length * 5) + 4;
 
   // AVISO 2 (PROIBIDO)
-  doc.setFont("Calibri", "bold");
+  doc.setFont("helvetica", "bold");
   doc.text("É PROIBIDO", marginLeft, y);
-  doc.setFont("Calibri", "normal");
+  doc.setFont("helvetica", "normal");
   const aviso2 = " a transferência de inscrições do piloto para outro piloto. Caso não seja possível terminar a etapa devido as condições climáticas, condições da pista, quebra de horário,";
   const avisoLines2 = doc.splitTextToSize(aviso2, maxIndentedWidth); 
   doc.text(avisoLines2, marginLeft + indent, y);
@@ -174,11 +174,11 @@ const generateIndividualPDF = (reg) => {
   y += (avisoLines2.length * 5) + 4;
 
   // AVISO 3 (NÃO HAVERÁ)
-  doc.setFont("Calibri", "bold");
+  doc.setFont("helvetica", "bold");
   doc.setTextColor(180, 0, 0);
   doc.text("NÃO HAVERÁ", marginLeft, y);
   doc.setTextColor(0, 0, 0);
-  doc.setFont("Calibri", "normal");
+  doc.setFont("helvetica", "normal");
   const aviso3 = " compensação ou devolução de valores pagos, as categorias não realizadas, terão pontuação dobrada na próxima etapa.";
   const avisoLines3 = doc.splitTextToSize(aviso3, maxIndentedWidth); 
   doc.text(avisoLines3, marginLeft + indent, y);
