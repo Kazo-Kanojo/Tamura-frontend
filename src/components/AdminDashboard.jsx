@@ -157,7 +157,7 @@ const generateIndividualPDF = (reg) => {
   doc.setFont("helvetica", "normal");
   doc.setTextColor(0, 0, 0); // Preto
   
-  const aviso1 = "Não será devolvido os valores pagos referente as inscrições em HIPOTESE alguma, bem como não será possível transferi-las para etapas futuras.";
+  const aviso1 = " Não será devolvido os valores pagos referente as inscrições em HIPOTESE alguma, bem como não será possível transferi-las para etapas futuras.";
   const avisoLines1 = doc.splitTextToSize(aviso1, maxIndentedWidth); 
   doc.text(avisoLines1, marginLeft + indent, y);
   
