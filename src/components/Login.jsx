@@ -12,16 +12,21 @@ const Login = () => {
   const [error, setError] = useState('');
   
   // Estado do formulário atualizado com o campo birth_date
-  const [formData, setFormData] = useState({
-    identifier: '', 
-    password: '', 
-    name: '', 
-    email: '', 
-    phone: '', 
-    cpf: '', 
-    bike_number: '', 
-    birth_date: '' // Novo campo
-  });
+const [formData, setFormData] = useState({
+  identifier: '', 
+  password: '', 
+  name: '', 
+  email: '', 
+  phone: '', 
+  cpf: '', 
+  rg: '',                
+  emergency_phone: '',    
+  medical_insurance: '',  
+  team: '',               
+  address: '',            
+  bike_number: '', 
+  birth_date: ''
+});
 
   useEffect(() => {
     const userStorage = localStorage.getItem('user');
@@ -121,8 +126,8 @@ const Login = () => {
                         <input type="text" name="phone" placeholder="(00) 00000-0000" className="w-full bg-[#0a0a0a] border border-gray-700 rounded-lg p-3 text-sm" value={formData.phone} onChange={handleChange} required/>
                     </div>
                     <div>
-                        <label className="block text-xs text-gray-500 uppercase font-bold mb-1">Nº Moto</label>
-                        <input type="text" name="bike_number" placeholder="000" className="w-full bg-[#0a0a0a] border border-gray-700 rounded-lg p-3 text-sm" value={formData.bike_number} onChange={handleChange} required/>
+                        <label className="block text-xs text-gray-500 uppercase font-bold mb-1">Tel. Urgência</label>
+                        <input type="text" name="emergency_phone" placeholder="(00) 00000-0000" className="w-full bg-[#0a0a0a] border border-gray-700 rounded-lg p-3 text-sm" value={formData.emergency_phone} onChange={handleChange} />
                     </div>
                   </div>
 
@@ -131,19 +136,37 @@ const Login = () => {
                         <label className="block text-xs text-gray-500 uppercase font-bold mb-1">CPF</label>
                         <input type="text" name="cpf" placeholder="000.000.000-00" className="w-full bg-[#0a0a0a] border border-gray-700 rounded-lg p-3 text-sm" value={formData.cpf} onChange={handleChange} required/>
                     </div>
-                    
-                    {/* CAMPO DE DATA DE NASCIMENTO ADICIONADO */}
+                    <div>
+                        <label className="block text-xs text-gray-500 uppercase font-bold mb-1">RG</label>
+                        <input type="text" name="rg" placeholder="00.000.000-0" className="w-full bg-[#0a0a0a] border border-gray-700 rounded-lg p-3 text-sm" value={formData.rg} onChange={handleChange} />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2">
                     <div>
                         <label className="block text-xs text-gray-500 uppercase font-bold mb-1">Nascimento</label>
-                        <input 
-                          type="date" 
-                          name="birth_date" 
-                          className="w-full bg-[#0a0a0a] border border-gray-700 rounded-lg p-3 text-gray-200 text-sm focus:border-[#D80000] focus:outline-none" 
-                          value={formData.birth_date} 
-                          onChange={handleChange} 
-                          required 
-                        />
+                        <input type="date" name="birth_date" className="w-full bg-[#0a0a0a] border border-gray-700 rounded-lg p-3 text-sm text-gray-200" value={formData.birth_date} onChange={handleChange} required />
                     </div>
+                    <div>
+                        <label className="block text-xs text-gray-500 uppercase font-bold mb-1">Nº Moto</label>
+                        <input type="text" name="bike_number" placeholder="000" className="w-full bg-[#0a0a0a] border border-gray-700 rounded-lg p-3 text-sm" value={formData.bike_number} onChange={handleChange} required/>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                        <label className="block text-xs text-gray-500 uppercase font-bold mb-1">Convênio Médico</label>
+                        <input type="text" name="medical_insurance" className="w-full bg-[#0a0a0a] border border-gray-700 rounded-lg p-3 text-sm" value={formData.medical_insurance} onChange={handleChange} />
+                    </div>
+                    <div>
+                        <label className="block text-xs text-gray-500 uppercase font-bold mb-1">Equipe</label>
+                        <input type="text" name="team" className="w-full bg-[#0a0a0a] border border-gray-700 rounded-lg p-3 text-sm" value={formData.team} onChange={handleChange} />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs text-gray-500 uppercase font-bold mb-1">Endereço Completo</label>
+                    <input type="text" name="address" placeholder="Rua, Número, Bairro, Cidade - UF" className="w-full bg-[#0a0a0a] border border-gray-700 rounded-lg p-3 text-sm" value={formData.address} onChange={handleChange} />
                   </div>
 
                   <div>
