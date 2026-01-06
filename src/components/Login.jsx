@@ -138,7 +138,7 @@ const [formData, setFormData] = useState({
                     </div>
                     <div>
                         <label className="block text-xs text-gray-500 uppercase font-bold mb-1">RG</label>
-                        <input type="text" name="rg" placeholder="00.000.000-0" className="w-full bg-[#0a0a0a] border border-gray-700 rounded-lg p-3 text-sm" value={formData.rg} onChange={handleChange} />
+                        <input type="text" name="rg" placeholder="00.000.000-0" className="w-full bg-[#0a0a0a] border border-gray-700 rounded-lg p-3 text-sm" value={formData.rg} onChange={handleChange} required/>
                     </div>
                   </div>
 
@@ -155,18 +155,18 @@ const [formData, setFormData] = useState({
 
                   <div className="grid grid-cols-2 gap-2">
                     <div>
-                        <label className="block text-xs text-gray-500 uppercase font-bold mb-1">Convênio Médico</label>
+                        <label className="block text-xs text-gray-500 uppercase font-bold mb-1">Convênio Médico(opicional)</label>
                         <input type="text" name="medical_insurance" className="w-full bg-[#0a0a0a] border border-gray-700 rounded-lg p-3 text-sm" value={formData.medical_insurance} onChange={handleChange} />
                     </div>
                     <div>
-                        <label className="block text-xs text-gray-500 uppercase font-bold mb-1">Equipe</label>
+                        <label className="block text-xs text-gray-500 uppercase font-bold mb-1">Equipe(opicional)</label>
                         <input type="text" name="team" className="w-full bg-[#0a0a0a] border border-gray-700 rounded-lg p-3 text-sm" value={formData.team} onChange={handleChange} />
                     </div>
                   </div>
 
                   <div>
                     <label className="block text-xs text-gray-500 uppercase font-bold mb-1">Endereço Completo</label>
-                    <input type="text" name="address" placeholder="Rua, Número, Bairro, Cidade - UF" className="w-full bg-[#0a0a0a] border border-gray-700 rounded-lg p-3 text-sm" value={formData.address} onChange={handleChange} />
+                    <input type="text" name="address" placeholder="Rua, Número, Bairro, Cidade - UF" className="w-full bg-[#0a0a0a] border border-gray-700 rounded-lg p-3 text-sm" value={formData.address} onChange={handleChange} required/>
                   </div>
 
                   <div>
