@@ -577,33 +577,164 @@ const handleSaveUser = async (e) => {
       }
   };
 
-  const handleGeneratePDF = () => {
-      const doc = new jsPDF();
-      doc.setFontSize(18);
-      doc.text(selectedStageReg.name, 14, 20);
-      doc.setFontSize(12);
-      doc.text(`Lista de Inscritos - Gerado em ${new Date().toLocaleDateString()}`, 14, 28);
-      const tableColumn = ["Piloto", "Moto", "Categorias", "Status", "Valor"];
-      const tableRows = [];
-      
-      const filteredRegs = registrationsList.filter(reg => 
-        reg.pilot_name.toLowerCase().includes(regSearch.toLowerCase()) || 
-        (reg.pilot_number && reg.pilot_number.includes(regSearch))
-      );
+  const generateIndividualPDF = (reg) => {
+  const doc = new jsPDF();
+  
+  // --- CONFIGURAÇÕES DE LAYOUT ---
+  const marginLeft = 15;
+  const marginRight = 15;
+  const pageWidth = 210;
+  const contentWidth = pageWidth - marginLeft - marginRight;
+  let y = 20; // Posição vertical inicial
 
-      filteredRegs.forEach(reg => {
-          const regData = [
-              reg.pilot_name,
-              reg.pilot_number || '-',
-              reg.categories,
-              reg.status === 'paid' ? 'PAGO' : 'PENDENTE',
-              `R$ ${reg.total_price}`
-          ];
-          tableRows.push(regData);
-      });
-      doc.autoTable({ head: [tableColumn], body: tableRows, startY: 35, theme: 'grid', styles: { fontSize: 10 }, headStyles: { fillColor: [220, 0, 0] } });
-      doc.save(`Lista_Inscritos_${selectedStageReg.name}.pdf`);
+  // --- CABEÇALHO ---
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(16);
+  doc.text("FICHA DE INSCRIÇÃO", pageWidth / 2, y, { align: "center" });
+  
+  y += 15;
+
+  // --- FUNÇÃO AUXILIAR PARA CAMPOS (Evita sobreposição) ---
+  const drawField = (label, value, xPos, width, isBoldValue = false) => {
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "bold");
+      doc.text(label, xPos, y);
+      
+      const labelWidth = doc.getTextWidth(label) + 2;
+      const valueSafe = value ? String(value).toUpperCase() : "";
+      
+      doc.setFont("helvetica", isBoldValue ? "bold" : "normal");
+      doc.text(valueSafe, xPos + labelWidth, y);
+      
+      // Linha de preenchimento
+      doc.setLineWidth(0.1);
+      doc.line(xPos + labelWidth, y + 1, xPos + width, y + 1);
   };
+
+  // --- DADOS DO PILOTO ---
+  // Linha 1
+  drawField("Equipe:", reg.team, marginLeft, 90);
+  
+  let dataNasc = "";
+  if (reg.birth_date) {
+      const dateObj = new Date(reg.birth_date);
+      dateObj.setMinutes(dateObj.getMinutes() + dateObj.getTimezoneOffset());
+      dataNasc = dateObj.toLocaleDateString('pt-BR');
+  }
+  drawField("Dt. Nasc.:", dataNasc, marginLeft + 95, 80);
+  
+  y += 10; 
+
+  // Linha 2
+  drawField("Piloto:", reg.pilot_name, marginLeft, contentWidth, true);
+  
+  y += 10;
+
+  // Linha 3
+  drawField("RG:", reg.rg, marginLeft, 60);
+  drawField("CPF:", reg.cpf, marginLeft + 65, 60);
+  drawField("Convênio:", reg.medical_insurance, marginLeft + 130, 50);
+
+  y += 10;
+
+  // Linha 4
+  drawField("Endereço:", reg.address, marginLeft, contentWidth);
+
+  y += 10;
+
+  // Linha 5
+  drawField("Tel:", reg.phone, marginLeft, 85);
+  drawField("Emergência:", reg.emergency_phone, marginLeft + 90, 90);
+
+  y += 15;
+
+  // --- BOX DE DADOS DA CORRIDA ---
+  doc.setFillColor(245, 245, 245);
+  doc.rect(marginLeft, y - 5, contentWidth, 22, 'F');
+  doc.rect(marginLeft, y - 5, contentWidth, 22, 'S');
+
+  doc.setFont("helvetica", "bold");
+  doc.text("CATEGORIAS:", marginLeft + 2, y + 2);
+  doc.setFont("helvetica", "normal");
+  // Quebra de linha se houver muitas categorias
+  const cats = reg.categories || "";
+  const splitCats = doc.splitTextToSize(cats, contentWidth - 30);
+  doc.text(splitCats, marginLeft + 30, y + 2);
+
+  // Ajusta Y baseado na altura das categorias
+  const catHeight = splitCats.length * 5; 
+  
+  doc.setFont("helvetica", "bold");
+  doc.text("MOTO #:", marginLeft + 2, y + 5 + catHeight);
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(14);
+  doc.text(reg.pilot_number || "___", marginLeft + 20, y + 5 + catHeight);
+
+  if(reg.chip_id) {
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "bold");
+      doc.text(`CHIP ID: ${reg.chip_id}`, marginLeft + 140, y + 5 + catHeight);
+  }
+
+  y += 20 + catHeight; // Espaço após o box
+
+  // --- TERMO DE RESPONSABILIDADE ---
+  doc.setFontSize(11);
+  doc.setFont("helvetica", "bold");
+  doc.text("Termo de Responsabilidade", pageWidth / 2, y, { align: "center" });
+  y += 6;
+  
+  doc.setFont("times", "normal");
+  doc.setFontSize(9); // Fonte menor para caber tudo
+  
+  const termoTexto = "Declaro para os devidos fins, que estou participando deste evento por minha livre e espontânea vontade e estou ciente que o Velocross, trata-se de uma atividade esportiva motorizada e sou conhecedor de todos os riscos envolvidos no motociclismo off Road. Declaro também que me encontro fisicamente, clinicamente apto a participar e não fiz uso de bebida alcoolica ou drogas. Concordo em observar e acatar qualquer decisão oficial dos organizadores do evento relativa a possibilidade de não terminá-lo NO TEMPO HABITUAL, por conta de chuvas, acidentes, etc. Assumo ainda todos os riscos competir na CORRIDAS E CAMPEONATOS DE VELOCROSS, isentando os seus organizadores bem como seus patrocinadores, apoiadores, Prefeitura Municipal, de quaisquer acidentes que eu venha a me envolver, durante as competições, contatos com outros participantes, efeito do clima, incluindo aqui alto calor e suas consequências, condições de tráfego e do circuito além de outras consequências que possam ter origem em minha falta de condicionamento físico para participar do mencionado evento de parte das entidades/ pessoas aqui nominadas. Estou ciente que qualquer atendimento médico que for necessário ocasionado por acidente na competição será direcionado a rede publica de atendimento médico, “SUS”. Concedo ainda permissão aos organizadores do evento e a seus patrocinadores, a utilizarem fotografias, filmagens ou qualquer outra forma que mostre minha participação NAS CORRIDAS E CAMPEONATOS DE VELOCROSS, bem como utilizar das imagens para divulgação, prospecção, apresentação e outras finalidades da organização.";
+  
+  const termoLines = doc.splitTextToSize(termoTexto, contentWidth);
+  doc.text(termoLines, marginLeft, y);
+
+  y += (termoLines.length * 3.5) + 5; 
+
+  // --- AVISOS IMPORTANTES ---
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(10);
+  doc.setTextColor(180, 0, 0); // Vermelho
+  doc.text("IMPORTANTE:", marginLeft, y);
+  
+  y += 5;
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(0, 0, 0);
+  doc.setFontSize(8); // Fonte pequena para os avisos
+
+  const aviso1 = "Não será devolvido os valores pagos referente as inscrições em HIPOTESE alguma, bem como não será possível transferi-las para etapas futuras. É PROIBIDO a transferência de inscrições do piloto para outro piloto.";
+  const avisoLines1 = doc.splitTextToSize(aviso1, contentWidth);
+  doc.text(avisoLines1, marginLeft, y);
+  
+  y += (avisoLines1.length * 3.5) + 2;
+
+  const aviso2 = "Caso não seja possível terminar a etapa devido as condições climáticas, condições da pista, quebra de horário, NÃO HAVERÁ compensação ou devolução de valores pagos, as categorias não realizadas, terão pontuação dobrada na próxima etapa.";
+  const avisoLines2 = doc.splitTextToSize(aviso2, contentWidth);
+  doc.text(avisoLines2, marginLeft, y);
+
+  // --- RODAPÉ ---
+  // Verifica se o Y estourou a página, se sim, adiciona nova página para assinatura
+  if (y > 250) {
+      doc.addPage();
+      y = 40;
+  } else {
+      y = 265; // Fixa no final da página se houver espaço
+  }
+
+  const hoje = new Date().toLocaleDateString('pt-BR');
+  doc.setFontSize(10);
+  doc.text(`São Paulo-SP, ${hoje}`, marginLeft, y - 15);
+  
+  doc.line(marginLeft + 70, y - 5, contentWidth, y - 5);
+  doc.text("Assinatura do Piloto ou Responsável", marginLeft + 100, y);
+
+  // Salvar
+  const cleanName = reg.pilot_name ? reg.pilot_name.replace(/[^a-zA-Z0-9]/g, '_') : 'ficha';
+  doc.save(`Ficha_${cleanName}.pdf`);
+};
 
   const totalInscritos = registrationsList.length;
   const totalReceita = registrationsList.reduce((acc, curr) => acc + (curr.total_price || 0), 0);
