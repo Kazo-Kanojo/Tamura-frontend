@@ -3,7 +3,7 @@ import { useNavigate, Link } from "react-router-dom";
 import Navbar from "./Navbar";
 import Footer from "./Footer";
 import Standings from "./Standings"; 
-import { Calendar, MapPin, PlusCircle, CheckCircle, Trophy, Flag, Cpu, Clock, AlertCircle, Tag, Copy, XCircle } from "lucide-react";
+import { Calendar, MapPin, PlusCircle, CheckCircle, Trophy, Flag, Cpu, Clock, AlertCircle, Tag, Copy, XCircle, UserCog, Save, X } from "lucide-react";
 import API_URL from "../api";
 
 const UserDashboard = () => {
@@ -14,15 +14,24 @@ const UserDashboard = () => {
   const [batchName, setBatchName] = useState(''); 
   const [pixKey, setPixKey] = useState('');
   const [loading, setLoading] = useState(true);
-  const [isCancelling, setIsCancelling] = useState(false); // NOVO ESTADO PARA LOADING DO BOTÃO
+  const [isCancelling, setIsCancelling] = useState(false);
   
+  // ESTADOS DO MODAL DE PERFIL
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
+  const [profileData, setProfileData] = useState({
+    name: '', email: '', phone: '', cpf: '', rg: '', 
+    birth_date: '', emergency_phone: '', medical_insurance: '', 
+    team: '', address: '', bike_number: ''
+  });
+
   // HELPER DE AUTH
   const getAuthHeaders = (token) => ({
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${token}`
   });
 
-  // --- NOVA FUNÇÃO PARA CANCELAR A INSCRIÇÃO ---
+  // --- FUNÇÃO PARA CANCELAR A INSCRIÇÃO ---
   const handleCancelRegistration = async (registrationId, stageName) => {
     if (!user) return alert("Erro de autenticação.");
     if (!window.confirm(`Tem certeza que deseja cancelar sua inscrição para a etapa "${stageName}"? Esta ação não pode ser desfeita.`)) {
@@ -40,7 +49,6 @@ const UserDashboard = () => {
 
         if (response.ok) {
             alert(result.message);
-            // Atualiza o estado removendo a inscrição cancelada
             setMyRegistrations(prev => prev.filter(r => r.id !== registrationId));
         } else {
             alert("Erro ao cancelar inscrição: " + result.error);
@@ -52,7 +60,63 @@ const UserDashboard = () => {
         setIsCancelling(false);
     }
   };
-  // ----------------------------------------------
+
+  // --- FUNÇÕES DE PERFIL ---
+  const handleOpenProfile = () => {
+      if (user) {
+          // Preenche o formulário com os dados atuais do usuário
+          setProfileData({
+              name: user.name || '',
+              email: user.email || '',
+              phone: user.phone || '',
+              cpf: user.cpf || '',
+              rg: user.rg || '',
+              birth_date: user.birth_date ? user.birth_date.split('T')[0] : '',
+              emergency_phone: user.emergency_phone || '',
+              medical_insurance: user.medical_insurance || '',
+              team: user.team || '',
+              address: user.address || '',
+              bike_number: user.bike_number || ''
+          });
+          setIsProfileOpen(true);
+      }
+  };
+
+  const handleProfileChange = (e) => {
+      setProfileData({ ...profileData, [e.target.name]: e.target.value });
+  };
+
+  const handleUpdateProfile = async (e) => {
+      e.preventDefault();
+      setIsSavingProfile(true);
+
+      try {
+          const response = await fetch(`${API_URL}/api/users/${user.id}`, {
+              method: 'PUT',
+              headers: getAuthHeaders(user.token),
+              body: JSON.stringify({
+                  ...profileData,
+                  role: user.role,     // Mantém o papel original
+                  chip_id: user.chip_id // Mantém o chip original (geralmente editado só por admin)
+              })
+          });
+
+          if (response.ok) {
+              alert("Dados atualizados com sucesso!");
+              setIsProfileOpen(false);
+              // Recarrega os dados para atualizar a tela
+              fetchData(user.id, user.token, user);
+          } else {
+              const errorData = await response.json();
+              alert("Erro ao atualizar: " + (errorData.error || response.statusText));
+          }
+      } catch (error) {
+          console.error("Erro ao salvar perfil:", error);
+          alert("Erro de conexão.");
+      } finally {
+          setIsSavingProfile(false);
+      }
+  };
 
 
   useEffect(() => {
@@ -60,7 +124,7 @@ const UserDashboard = () => {
     if (storedUser) {
       const parsedUser = JSON.parse(storedUser);
       setUser(parsedUser);
-      fetchData(parsedUser.id, parsedUser.token, parsedUser); // Passa o objeto inicial
+      fetchData(parsedUser.id, parsedUser.token, parsedUser); 
     } else {
       navigate("/login");
     }
@@ -71,7 +135,7 @@ const UserDashboard = () => {
     let currentUserData = initialUser;
 
     try {
-      // 1. Busca Detalhes Completos do Usuário (incluindo birth_date)
+      // 1. Busca Detalhes Completos do Usuário
       const userRes = await fetch(`${API_URL}/api/users/${userId}`, {
           headers: getAuthHeaders(token)
       });
@@ -79,9 +143,9 @@ const UserDashboard = () => {
       if (userRes.ok) {
           const updatedUser = await userRes.json();
           // Mescla dados do storage com dados frescos do servidor
-          currentUserData = { ...initialUser, ...updatedUser };
+          // Preserva o token que está no initialUser mas não vem na rota GET /users/:id
+          currentUserData = { ...updatedUser, token: initialUser.token };
           setUser(currentUserData); 
-          // Atualiza o localStorage com os dados completos (mantendo o token)
           localStorage.setItem('user', JSON.stringify(currentUserData));
       } else if (userRes.status === 403 || userRes.status === 401) {
           console.error("Token inválido ou expirado. Redirecionando.");
@@ -90,22 +154,22 @@ const UserDashboard = () => {
           return;
       }
 
-      // 2. Busca Etapas (Público)
+      // 2. Busca Etapas
       const stagesRes = await fetch(`${API_URL}/api/stages`);
       setStages(await stagesRes.json());
 
-      // 3. Busca Inscrições (Protegido)
+      // 3. Busca Inscrições
       const myRegRes = await fetch(`${API_URL}/api/registrations/user/${userId}`, {
           headers: getAuthHeaders(token)
       });
-      setMyRegistrations(await myRegRes.json()); // Assumindo que o erro 403/401 já foi tratado acima
+      setMyRegistrations(await myRegRes.json()); 
 
       // 4. Configurações (PIX)
       const pixRes = await fetch(`${API_URL}/api/settings/pix_key`);
       const pixData = pixRes.ok ? await pixRes.json() : { value: '' };
       setPixKey(pixData.value || '');
 
-      // 5. Configurações (Batch Name - Usando uma query simples para exemplo)
+      // 5. Configurações (Batch Name)
       const batchRes = await fetch(`${API_URL}/api/settings/batch_name`); 
       const batchData = batchRes.ok ? await batchRes.json() : { value: '' };
       setBatchName(batchData.value || 'Lote Padrão de Inscrição');
@@ -137,16 +201,22 @@ const UserDashboard = () => {
       
       <Navbar />
 
-      <main className="flex-grow">
+      <main className="flex-grow relative">
         <div className="max-w-7xl mx-auto px-4 py-12">
           
           {/* CABEÇALHO */}
           <div className="mb-16 flex flex-col md:flex-row justify-between items-end border-b border-gray-800 pb-8 gap-6">
             <div>
               <span className="text-[#D80000] font-bold tracking-widest text-sm uppercase mb-2 block">Área do Piloto</span>
-              <h1 className="text-4xl md:text-6xl font-black italic uppercase tracking-tighter">
+              <h1 className="text-4xl md:text-6xl font-black italic uppercase tracking-tighter mb-4">
                 Olá, <span className="text-white">{user.name.split(' ')[0]}</span>
               </h1>
+              <button 
+                onClick={handleOpenProfile}
+                className="flex items-center gap-2 text-sm font-bold text-gray-400 hover:text-white bg-[#111] border border-gray-800 hover:border-gray-600 px-4 py-2 rounded-full transition-all"
+              >
+                <UserCog size={16} /> Meus Dados
+              </button>
             </div>
             
             <div className="flex gap-4 w-full md:w-auto">
@@ -196,17 +266,15 @@ const UserDashboard = () => {
                   const isRegistered = !!registration;
                   const isPaid = registration?.status === 'paid';
 
-                  // --- NOVA LÓGICA DE ENCERRAMENTO ---
                   const endDate = stage.end_date ? new Date(stage.end_date) : new Date(stage.date);
-                  endDate.setDate(endDate.getDate() + 1); // Tolerância de 1 dia
-                  endDate.setHours(23, 59, 59, 999); // Fim do dia
+                  endDate.setDate(endDate.getDate() + 1); 
+                  endDate.setHours(23, 59, 59, 999); 
                   const isClosed = new Date() > endDate;
-                  // -----------------------------------
 
                   return (
                     <div key={stage.id} className={`bg-[#111] border rounded-2xl overflow-hidden transition-all duration-300 group shadow-lg flex flex-col ${isRegistered ? (isPaid ? 'border-green-900/50' : 'border-yellow-900/50') : (isClosed ? 'border-gray-800 opacity-75' : 'border-gray-800 hover:border-[#D80000]')}`}>
                       
-                      {/* IMAGEM E STATUS DO TOPO */}
+                      {/* IMAGEM E STATUS */}
                       <div className="h-48 bg-neutral-900 relative overflow-hidden">
                           {stage.image_url ? (
                               <img 
@@ -240,7 +308,7 @@ const UserDashboard = () => {
                           </div>
                       </div>
 
-                      {/* CONTEÚDO DO CARD */}
+                      {/* CONTEÚDO */}
                       <div className="p-8 flex flex-col flex-grow">
                         <h3 className={`text-2xl font-black italic uppercase mb-2 ${isClosed && !isRegistered ? 'text-gray-500' : 'text-white'}`}>{stage.name}</h3>
                         <div className="space-y-3 mb-8 text-sm text-gray-400">
@@ -250,18 +318,11 @@ const UserDashboard = () => {
                         
                         <div className="mt-auto">
                             {isRegistered ? (
-                              // Se já está inscrito, mostra status do pagamento (independente se fechou ou não)
                               <div className={`rounded-xl p-4 border ${isPaid ? 'bg-green-900/10 border-green-900/30' : 'bg-yellow-900/10 border-yellow-900/30'}`}>
                                   {isPaid ? (
                                       <div className="text-center">
                                           <p className="text-green-500 font-black uppercase text-sm flex items-center justify-center gap-2 mb-1"><CheckCircle size={16}/> Inscrição Paga</p>
-                                          <p className="text-xs text-green-400/60 mb-2">Prepare sua moto e boa prova!</p>
-                                          {/* Desabilitar cancelamento para pago (usuário precisa contatar admin) */}
-                                          <button 
-                                              title="Para cancelamento e reembolso, entre em contato com o organizador."
-                                              disabled
-                                              className="w-full text-xs text-gray-700 bg-gray-900/20 border border-gray-900/50 py-2 rounded cursor-not-allowed"
-                                          >
+                                          <button disabled className="w-full text-xs text-gray-700 bg-gray-900/20 border border-gray-900/50 py-2 rounded cursor-not-allowed">
                                               Cancelamento indisponível
                                           </button>
                                       </div>
@@ -279,9 +340,7 @@ const UserDashboard = () => {
                                           ) : (
                                               <p className="text-[10px] text-red-400 mb-2">Chave PIX não configurada.</p>
                                           )}
-                                          <p className="text-[10px] text-gray-500 mb-3">Envie o comprovante para o organizador.</p>
                                           
-                                          {/* ADICIONAR O BOTÃO DE CANCELAR AQUI */}
                                           <button
                                             onClick={() => handleCancelRegistration(registration.id, stage.name)}
                                             disabled={isCancelling}
@@ -289,18 +348,15 @@ const UserDashboard = () => {
                                           >
                                             <XCircle size={14} /> {isCancelling ? 'Cancelando...' : 'Cancelar Inscrição'}
                                           </button>
-                                          {/* FIM DO BOTÃO DE CANCELAR */}
                                           
                                       </div>
                                   )}
                               </div>
                             ) : isClosed ? (
-                              // Se NÃO está inscrito E fechou: Botão Desativado
                               <button disabled className="w-full bg-neutral-800 text-gray-500 font-black py-4 rounded-xl uppercase tracking-widest cursor-not-allowed border border-neutral-700 flex items-center justify-center gap-2">
                                 <XCircle size={20} /> Inscrições Encerradas
                               </button>
                             ) : (
-                              // Se NÃO está inscrito E está aberto: Botão de Inscrição
                               <Link to={`/event/${stage.id}/register`}>
                                 <button className="w-full bg-white text-black hover:bg-[#D80000] hover:text-white font-black py-4 rounded-xl uppercase tracking-widest transition-all flex items-center justify-center gap-2 shadow-xl hover:shadow-red-900/20 hover:-translate-y-1">
                                   <PlusCircle size={20} /> Inscrever-se
@@ -331,6 +387,80 @@ const UserDashboard = () => {
           </section>
 
         </div>
+
+        {/* --- MODAL DE MEUS DADOS --- */}
+        {isProfileOpen && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+                <div className="bg-[#111] border border-gray-800 rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl animate-fade-in-up">
+                    <div className="flex justify-between items-center p-6 border-b border-gray-800 sticky top-0 bg-[#111] z-10">
+                        <h2 className="text-xl font-black italic uppercase flex items-center gap-2">
+                            <UserCog className="text-[#D80000]" /> Meus Dados
+                        </h2>
+                        <button onClick={() => setIsProfileOpen(false)} className="text-gray-500 hover:text-white">
+                            <X size={24} />
+                        </button>
+                    </div>
+                    
+                    <form onSubmit={handleUpdateProfile} className="p-6 space-y-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-xs text-gray-500 uppercase font-bold mb-1">Nome Completo</label>
+                                <input type="text" name="name" value={profileData.name} onChange={handleProfileChange} required className="w-full bg-black border border-gray-700 rounded-lg p-3 text-white focus:border-[#D80000] focus:outline-none" />
+                            </div>
+                            <div>
+                                <label className="block text-xs text-gray-500 uppercase font-bold mb-1">CPF</label>
+                                <input type="text" name="cpf" value={profileData.cpf} readOnly className="w-full bg-neutral-900 border border-gray-800 rounded-lg p-3 text-gray-400 cursor-not-allowed" title="CPF não pode ser alterado." />
+                            </div>
+                            <div>
+                                <label className="block text-xs text-gray-500 uppercase font-bold mb-1">RG</label>
+                                <input type="text" name="rg" value={profileData.rg} onChange={handleProfileChange} className="w-full bg-black border border-gray-700 rounded-lg p-3 text-white focus:border-[#D80000] focus:outline-none" />
+                            </div>
+                            <div>
+                                <label className="block text-xs text-gray-500 uppercase font-bold mb-1">Data Nascimento</label>
+                                <input type="date" name="birth_date" value={profileData.birth_date} onChange={handleProfileChange} required className="w-full bg-black border border-gray-700 rounded-lg p-3 text-white focus:border-[#D80000] focus:outline-none" />
+                            </div>
+                            <div>
+                                <label className="block text-xs text-gray-500 uppercase font-bold mb-1">Telefone</label>
+                                <input type="text" name="phone" value={profileData.phone} onChange={handleProfileChange} required className="w-full bg-black border border-gray-700 rounded-lg p-3 text-white focus:border-[#D80000] focus:outline-none" />
+                            </div>
+                            <div>
+                                <label className="block text-xs text-gray-500 uppercase font-bold mb-1">Tel. Urgência</label>
+                                <input type="text" name="emergency_phone" value={profileData.emergency_phone} onChange={handleProfileChange} className="w-full bg-black border border-gray-700 rounded-lg p-3 text-white focus:border-[#D80000] focus:outline-none" />
+                            </div>
+                            <div>
+                                <label className="block text-xs text-gray-500 uppercase font-bold mb-1">Equipe</label>
+                                <input type="text" name="team" value={profileData.team} onChange={handleProfileChange} className="w-full bg-black border border-gray-700 rounded-lg p-3 text-white focus:border-[#D80000] focus:outline-none" />
+                            </div>
+                            <div>
+                                <label className="block text-xs text-gray-500 uppercase font-bold mb-1">Convênio Médico</label>
+                                <input type="text" name="medical_insurance" value={profileData.medical_insurance} onChange={handleProfileChange} className="w-full bg-black border border-gray-700 rounded-lg p-3 text-white focus:border-[#D80000] focus:outline-none" />
+                            </div>
+                            <div>
+                                <label className="block text-xs text-gray-500 uppercase font-bold mb-1">Nº Moto</label>
+                                <input type="text" name="bike_number" value={profileData.bike_number} onChange={handleProfileChange} className="w-full bg-black border border-gray-700 rounded-lg p-3 text-white focus:border-[#D80000] focus:outline-none" />
+                            </div>
+                            <div className="md:col-span-2">
+                                <label className="block text-xs text-gray-500 uppercase font-bold mb-1">Endereço Completo</label>
+                                <input type="text" name="address" value={profileData.address} onChange={handleProfileChange} placeholder="Rua, Número, Bairro, Cidade - UF" className="w-full bg-black border border-gray-700 rounded-lg p-3 text-white focus:border-[#D80000] focus:outline-none" />
+                            </div>
+                            <div className="md:col-span-2">
+                                <label className="block text-xs text-gray-500 uppercase font-bold mb-1">Email</label>
+                                <input type="email" name="email" value={profileData.email} onChange={handleProfileChange} required className="w-full bg-black border border-gray-700 rounded-lg p-3 text-white focus:border-[#D80000] focus:outline-none" />
+                            </div>
+                        </div>
+
+                        <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-gray-800">
+                            <button type="button" onClick={() => setIsProfileOpen(false)} className="px-6 py-3 rounded-lg text-sm font-bold text-gray-400 hover:bg-gray-800 transition">Cancelar</button>
+                            <button type="submit" disabled={isSavingProfile} className="bg-[#D80000] hover:bg-red-700 text-white px-8 py-3 rounded-lg text-sm font-black uppercase tracking-wide flex items-center gap-2 shadow-lg hover:shadow-red-900/20 transition-all">
+                                {isSavingProfile ? 'Salvando...' : 'Salvar Alterações'}
+                                {!isSavingProfile && <Save size={18} />}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        )}
+
       </main>
 
       <Footer />
