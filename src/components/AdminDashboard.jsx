@@ -60,7 +60,7 @@ const AdminDashboard = () => {
   const [newCatName, setNewCatName] = useState('');
 
 
-/
+
   // --- HELPER: FORMATAR DATA PARA INPUT (YYYY-MM-DD) ---
   const formatDateForInput = (dateValue) => {
     if (!dateValue) return '';
