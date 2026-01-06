@@ -411,7 +411,7 @@ const generateIndividualPDF = (reg) => {
       setUserForm({ id: null, name: '', email: '', phone: '', bike_number: '', chip_id: '', role: 'user', birth_date: '' }); 
   };
 
-  const handleSaveUser = async (e) => {
+const handleSaveUser = async (e) => {
       e.preventDefault(); 
       setLoading(true);
       try {
@@ -420,12 +420,23 @@ const generateIndividualPDF = (reg) => {
               headers: getAuthHeaders(), 
               body: JSON.stringify(userForm)
           });
+
+          // CORREÇÃO: Ler a resposta JSON para saber o erro caso não seja 200 OK
+          const data = await res.json();
+
           if (res.ok) { 
               showMessage("Usuário atualizado!", "success"); 
               setEditingUser(null); 
               fetchUsers(); 
+          } else {
+              // CORREÇÃO: Mostrar o erro real retornado pelo backend
+              showMessage(data.error || "Erro ao atualizar usuário.", "error");
           }
-      } catch (error) { showMessage("Erro.", "error"); } finally { setLoading(false); }
+      } catch (error) { 
+          showMessage("Erro de conexão.", "error"); 
+      } finally { 
+          setLoading(false); 
+      }
   };
 
   const handleDeleteUser = async (id) => {
