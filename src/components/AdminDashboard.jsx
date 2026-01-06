@@ -60,134 +60,7 @@ const AdminDashboard = () => {
   const [newCatName, setNewCatName] = useState('');
 
 
-// --- FUNÇÃO GERAR PDF INDIVIDUAL ---
-const generateIndividualPDF = (reg) => {
-  const doc = new jsPDF();
-  
-  // --- CONFIGURAÇÕES DE LAYOUT ---
-  const marginLeft = 15;
-  const marginRight = 15;
-  const pageWidth = 210;
-  const contentWidth = pageWidth - marginLeft - marginRight;
-  let y = 20; // Posição vertical inicial
-
-  // --- CABEÇALHO ---
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(16);
-  doc.text("FICHA DE INSCRIÇÃO", pageWidth / 2, y, { align: "center" });
-  
-  y += 15; // Espaço após título
-
-  // --- FUNÇÃO AUXILIAR PARA CAMPOS ---
-  // Desenha: Rótulo em Negrito + Valor Normal + Linha sublinhada
-  const drawField = (label, value, xPos, width, isBoldValue = false) => {
-      doc.setFontSize(11);
-      doc.setFont("helvetica", "bold");
-      doc.text(label, xPos, y);
-      
-      const labelWidth = doc.getTextWidth(label) + 2;
-      const valueSafe = value ? String(value).toUpperCase() : "";
-      
-      doc.setFont("helvetica", isBoldValue ? "bold" : "normal");
-      doc.text(valueSafe, xPos + labelWidth, y);
-      
-      // Desenha linha pontilhada ou contínua para preenchimento visual
-      doc.setLineWidth(0.1);
-      doc.line(xPos + labelWidth, y + 1, xPos + width, y + 1);
-  };
-
-  // --- LINHA 1: Equipa e Data Nascimento ---
-  drawField("Equipe:", reg.team, marginLeft, 80);
-  
-  // Tratamento seguro para data
-  let dataNasc = "";
-  if (reg.birth_date) {
-      // Tenta ajustar fuso horário para não pegar dia anterior
-      const dateObj = new Date(reg.birth_date);
-      dateObj.setMinutes(dateObj.getMinutes() + dateObj.getTimezoneOffset());
-      dataNasc = dateObj.toLocaleDateString('pt-BR');
-  }
-  drawField("Dt. Nasc.:", dataNasc, marginLeft + 85, 90);
-  
-  y += 10; 
-
-  // --- LINHA 2: Nome Completo (Destaque) ---
-  drawField("Piloto:", reg.pilot_name, marginLeft, contentWidth, true);
-  
-  y += 10;
-
-  // --- LINHA 3: RG, CPF e Convênio ---
-  drawField("RG:", reg.rg, marginLeft, 55);
-  drawField("CPF:", reg.cpf, marginLeft + 60, 55);
-  drawField("Convênio:", reg.medical_insurance, marginLeft + 120, 60);
-
-  y += 10;
-
-  // --- LINHA 4: Endereço ---
-  drawField("Endereço:", reg.address, marginLeft, contentWidth);
-
-  y += 10;
-
-  // --- LINHA 5: Telefones ---
-  drawField("Tel:", reg.phone, marginLeft, 80);
-  drawField("Emergência:", reg.emergency_phone, marginLeft + 85, 95);
-
-  y += 15;
-
-  // --- BOX DE DADOS DA CORRIDA ---
-  doc.setFillColor(240, 240, 240);
-  doc.rect(marginLeft, y - 5, contentWidth, 20, 'F');
-  doc.rect(marginLeft, y - 5, contentWidth, 20, 'S'); // Borda
-
-  doc.setFont("helvetica", "bold");
-  doc.text("CATEGORIAS:", marginLeft + 2, y + 2);
-  doc.setFont("helvetica", "normal");
-  doc.text(reg.categories || "", marginLeft + 35, y + 2);
-
-  doc.setFont("helvetica", "bold");
-  doc.text("MOTO #:", marginLeft + 2, y + 10);
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(14);
-  doc.text(reg.pilot_number || "___", marginLeft + 22, y + 10);
-
-  // Chip box
-  if(reg.chip_id) {
-      doc.setFontSize(11);
-      doc.setFont("helvetica", "bold");
-      doc.text(`CHIP: ${reg.chip_id}`, marginLeft + 140, y + 8);
-  }
-
-  y += 25;
-
-  // --- TERMO DE RESPONSABILIDADE ---
-  doc.setFontSize(12);
-  doc.setFont("helvetica", "bold");
-  doc.text("Termo de Responsabilidade", pageWidth / 2, y, { align: "center" });
-  y += 7;
-  
-  doc.setFont("times", "normal");
-  doc.setFontSize(9); 
-  
-  const termoTexto = "Declaro para os devidos fins, que estou participando deste evento por minha livre e espontânea vontade e estou ciente que o Velocross, trata-se de uma atividade esportiva motorizada e sou conhecedor de todos os riscos envolvidos. Declaro também que me encontro fisicamente e clinicamente apto a participar. Assumo todos os riscos de competir, isentando organizadores e patrocinadores de quaisquer acidentes. Autorizo o uso da minha imagem para divulgação do evento.";
-  const termoLines = doc.splitTextToSize(termoTexto, contentWidth);
-  doc.text(termoLines, marginLeft, y);
-
-  y += (termoLines.length * 4) + 10; 
-
-  // --- RODAPÉ / ASSINATURA ---
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(10);
-  
-  const hoje = new Date().toLocaleDateString('pt-BR');
-  doc.text(`Data: ${hoje}`, marginLeft, y + 10);
-  
-  doc.line(marginLeft + 60, y + 10, contentWidth, y + 10);
-  doc.text("Assinatura do Piloto ou Responsável", marginLeft + 90, y + 15);
-
-  // Salvar
-  const cleanName = reg.pilot_name ? reg.pilot_name.replace(/[^a-zA-Z0-9]/g, '_') : 'ficha';
-  doc.save(`Ficha_${cleanName}.pdf`);
-};
+/
   // --- HELPER: FORMATAR DATA PARA INPUT (YYYY-MM-DD) ---
   const formatDateForInput = (dateValue) => {
     if (!dateValue) return '';
@@ -577,7 +450,8 @@ const handleSaveUser = async (e) => {
       }
   };
 
-  const generateIndividualPDF = (reg) => {
+ // --- FUNÇÃO GERAR PDF INDIVIDUAL ---
+const generateIndividualPDF = (reg) => {
   const doc = new jsPDF();
   
   // --- CONFIGURAÇÕES DE LAYOUT ---
