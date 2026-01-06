@@ -28,8 +28,10 @@ const AdminDashboard = () => {
   const [userSearch, setUserSearch] = useState(''); 
   const [editingUser, setEditingUser] = useState(null); 
   const [userForm, setUserForm] = useState({ 
-      id: null, name: '', email: '', phone: '', bike_number: '', chip_id: '', role: 'user', birth_date: '' 
-  });
+    id: null, name: '', email: '', phone: '', bike_number: '', 
+    chip_id: '', role: 'user', birth_date: '',
+    rg: '', cpf: '', medical_insurance: '', team: '', emergency_phone: '', address: ''
+});
 
   // --- ESTADOS DA PONTUAÇÃO ---
   const [selectedStage, setSelectedStage] = useState(null);
@@ -385,18 +387,24 @@ const generateIndividualPDF = (reg) => {
   };
 
   const handleEditUserClick = (user) => {
-      setEditingUser(user.id);
-      setUserForm({ 
-          id: user.id, 
-          name: user.name, 
-          email: user.email, 
-          phone: user.phone, 
-          bike_number: user.bike_number || '', 
-          chip_id: user.chip_id || '', 
-          role: user.role,
-          birth_date: formatDateForInput(user.birth_date)
-      });
-  };
+    setEditingUser(user.id);
+    setUserForm({ 
+        id: user.id, 
+        name: user.name || '', 
+        email: user.email || '', 
+        phone: user.phone || '', 
+        bike_number: user.bike_number || '', 
+        chip_id: user.chip_id || '', 
+        role: user.role || 'user',
+        birth_date: formatDateForInput(user.birth_date),
+        rg: user.rg || '',
+        cpf: user.cpf || '',
+        medical_insurance: user.medical_insurance || '',
+        team: user.team || '',
+        emergency_phone: user.emergency_phone || '',
+        address: user.address || ''
+    });
+};
 
   const handleCancelEditUser = () => { 
       setEditingUser(null); 
@@ -1099,143 +1107,96 @@ const generateIndividualPDF = (reg) => {
         {activeTab === 'users' && (
           <div className="animate-fade-in space-y-6">
              {editingUser && (
-  <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50 backdrop-blur-sm">
-    <div className="bg-[#111] border border-gray-800 rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl">
-      <div className="p-6 border-b border-gray-800 flex justify-between items-center sticky top-0 bg-[#111] z-10">
-        <h3 className="text-xl font-bold italic text-white">Editar Piloto</h3>
-        <button onClick={() => setEditingUser(null)} className="text-gray-500 hover:text-white"><X size={24}/></button>
-      </div>
-      
-      <div className="p-6 space-y-4">
-        {/* Dados Pessoais */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-                <label className="block text-xs text-gray-500 uppercase font-bold mb-1">Nome</label>
-                <input 
-                    className="w-full bg-black border border-gray-700 rounded p-2 text-white" 
-                    value={editingUser.name} 
-                    onChange={e => setEditingUser({...editingUser, name: e.target.value})} 
-                />
-            </div>
-            <div>
-                <label className="block text-xs text-gray-500 uppercase font-bold mb-1">Email</label>
-                <input 
-                    className="w-full bg-black border border-gray-700 rounded p-2 text-white" 
-                    value={editingUser.email} 
-                    onChange={e => setEditingUser({...editingUser, email: e.target.value})} 
-                />
-            </div>
-            <div>
-                <label className="block text-xs text-gray-500 uppercase font-bold mb-1">CPF</label>
-                <input 
-                    className="w-full bg-neutral-900 border border-gray-800 rounded p-2 text-gray-500 cursor-not-allowed" 
-                    value={editingUser.cpf} 
-                    readOnly 
-                />
-            </div>
-            <div>
-                <label className="block text-xs text-gray-500 uppercase font-bold mb-1">RG</label>
-                <input 
-                    className="w-full bg-black border border-gray-700 rounded p-2 text-white" 
-                    value={editingUser.rg || ''} 
-                    onChange={e => setEditingUser({...editingUser, rg: e.target.value})} 
-                />
-            </div>
-            <div>
-                <label className="block text-xs text-gray-500 uppercase font-bold mb-1">Data Nascimento</label>
-                <input 
-                    type="date"
-                    className="w-full bg-black border border-gray-700 rounded p-2 text-white" 
-                    value={editingUser.birth_date ? editingUser.birth_date.split('T')[0] : ''} 
-                    onChange={e => setEditingUser({...editingUser, birth_date: e.target.value})} 
-                />
-            </div>
-            <div>
-                <label className="block text-xs text-gray-500 uppercase font-bold mb-1">Telefone</label>
-                <input 
-                    className="w-full bg-black border border-gray-700 rounded p-2 text-white" 
-                    value={editingUser.phone} 
-                    onChange={e => setEditingUser({...editingUser, phone: e.target.value})} 
-                />
-            </div>
-        </div>
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+                    <div className="bg-[#111] border border-gray-800 rounded-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto shadow-2xl">
+                        <div className="flex justify-between items-center p-6 border-b border-gray-800 sticky top-0 bg-[#111] z-10">
+                            <h3 className="text-xl font-bold italic text-white flex items-center gap-2">
+                                <Edit3 className="text-yellow-500" /> Editando Piloto
+                            </h3>
+                            <button onClick={handleCancelEditUser} className="text-gray-500 hover:text-white">
+                                <X size={24} />
+                            </button>
+                        </div>
+                        
+                        <form onSubmit={handleSaveUser} className="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {/* Dados Pessoais */}
+                            <div className="lg:col-span-3 pb-2 border-b border-gray-800 mb-2">
+                                <h4 className="text-xs font-bold text-gray-500 uppercase">Dados Pessoais</h4>
+                            </div>
 
-        {/* Dados de Corrida e Extras */}
-        <div className="border-t border-gray-800 pt-4 mt-2">
-            <h4 className="text-[#D80000] text-xs font-bold uppercase mb-3">Dados de Competição & Extras</h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-xs text-gray-500 uppercase font-bold mb-1">Nome Completo</label>
+                                <input className="w-full bg-neutral-900 border border-neutral-700 rounded p-2 text-white focus:border-yellow-500" value={userForm.name} onChange={e => setUserForm({...userForm, name: e.target.value})} />
+                            </div>
+                            <div>
+                                <label className="block text-xs text-gray-500 uppercase font-bold mb-1">Email</label>
+                                <input className="w-full bg-neutral-900 border border-neutral-700 rounded p-2 text-white focus:border-yellow-500" value={userForm.email} onChange={e => setUserForm({...userForm, email: e.target.value})} />
+                            </div>
+                            <div>
+                                <label className="block text-xs text-gray-500 uppercase font-bold mb-1">CPF</label>
+                                <input className="w-full bg-neutral-900 border border-neutral-800 rounded p-2 text-gray-500 cursor-not-allowed" value={userForm.cpf} readOnly title="CPF não pode ser alterado" />
+                            </div>
+                            <div>
+                                <label className="block text-xs text-gray-500 uppercase font-bold mb-1">RG</label>
+                                <input className="w-full bg-neutral-900 border border-neutral-700 rounded p-2 text-white focus:border-yellow-500" value={userForm.rg} onChange={e => setUserForm({...userForm, rg: e.target.value})} />
+                            </div>
+                            <div>
+                                <label className="block text-xs text-gray-500 uppercase font-bold mb-1">Data Nascimento</label>
+                                <input type="date" className="w-full bg-neutral-900 border border-neutral-700 rounded p-2 text-white focus:border-yellow-500" value={userForm.birth_date} onChange={e => setUserForm({...userForm, birth_date: e.target.value})} />
+                            </div>
+                            <div>
+                                <label className="block text-xs text-gray-500 uppercase font-bold mb-1">Telefone</label>
+                                <input className="w-full bg-neutral-900 border border-neutral-700 rounded p-2 text-white focus:border-yellow-500" value={userForm.phone} onChange={e => setUserForm({...userForm, phone: e.target.value})} />
+                            </div>
+
+                {/* Dados Extras e Competição */}
+                <div className="lg:col-span-3 pb-2 border-b border-gray-800 mb-2 mt-4">
+                    <h4 className="text-xs font-bold text-gray-500 uppercase">Competição & Extras</h4>
+                </div>
+
                 <div>
-                    <label className="block text-xs text-gray-500 uppercase font-bold mb-1">Nº Moto</label>
-                    <input 
-                        className="w-full bg-black border border-gray-700 rounded p-2 text-white font-bold" 
-                        value={editingUser.bike_number} 
-                        onChange={e => setEditingUser({...editingUser, bike_number: e.target.value})} 
-                    />
+                    <label className="block text-xs text-gray-500 uppercase font-bold mb-1 text-yellow-500">Nº Moto</label>
+                    <input className="w-full bg-neutral-900 border border-yellow-900/50 rounded p-2 text-yellow-500 font-bold" value={userForm.bike_number} onChange={e => setUserForm({...userForm, bike_number: e.target.value})} />
                 </div>
                 <div>
-                    <label className="block text-xs text-gray-500 uppercase font-bold mb-1">Chip ID</label>
-                    <input 
-                        className="w-full bg-black border border-gray-700 rounded p-2 text-blue-400 font-mono" 
-                        value={editingUser.chip_id || ''} 
-                        onChange={e => setEditingUser({...editingUser, chip_id: e.target.value})} 
-                        placeholder="Ex: E200..."
-                    />
+                    <label className="block text-xs text-gray-500 uppercase font-bold mb-1 text-blue-400">Chip ID</label>
+                    <div className="relative">
+                        <input className="w-full bg-blue-900/10 border border-blue-900/50 rounded p-2 text-blue-400 font-mono font-bold" value={userForm.chip_id} onChange={e => setUserForm({...userForm, chip_id: e.target.value})} />
+                    </div>
                 </div>
                 <div>
                     <label className="block text-xs text-gray-500 uppercase font-bold mb-1">Equipe</label>
-                    <input 
-                        className="w-full bg-black border border-gray-700 rounded p-2 text-white" 
-                        value={editingUser.team || ''} 
-                        onChange={e => setEditingUser({...editingUser, team: e.target.value})} 
-                    />
+                    <input className="w-full bg-neutral-900 border border-neutral-700 rounded p-2 text-white focus:border-yellow-500" value={userForm.team} onChange={e => setUserForm({...userForm, team: e.target.value})} />
                 </div>
                 <div>
                     <label className="block text-xs text-gray-500 uppercase font-bold mb-1">Convênio Médico</label>
-                    <input 
-                        className="w-full bg-black border border-gray-700 rounded p-2 text-white" 
-                        value={editingUser.medical_insurance || ''} 
-                        onChange={e => setEditingUser({...editingUser, medical_insurance: e.target.value})} 
-                    />
+                    <input className="w-full bg-neutral-900 border border-neutral-700 rounded p-2 text-white focus:border-yellow-500" value={userForm.medical_insurance} onChange={e => setUserForm({...userForm, medical_insurance: e.target.value})} />
                 </div>
                 <div>
                     <label className="block text-xs text-gray-500 uppercase font-bold mb-1">Tel. Emergência</label>
-                    <input 
-                        className="w-full bg-black border border-gray-700 rounded p-2 text-white" 
-                        value={editingUser.emergency_phone || ''} 
-                        onChange={e => setEditingUser({...editingUser, emergency_phone: e.target.value})} 
-                    />
+                    <input className="w-full bg-neutral-900 border border-neutral-700 rounded p-2 text-white focus:border-yellow-500" value={userForm.emergency_phone} onChange={e => setUserForm({...userForm, emergency_phone: e.target.value})} />
                 </div>
                 <div>
-                    <label className="block text-xs text-gray-500 uppercase font-bold mb-1">Permissão (Role)</label>
-                    <select 
-                        className="w-full bg-black border border-gray-700 rounded p-2 text-white"
-                        value={editingUser.role}
-                        onChange={e => setEditingUser({...editingUser, role: e.target.value})}
-                    >
-                        <option value="user">Piloto (User)</option>
+                    <label className="block text-xs text-gray-500 uppercase font-bold mb-1">Função (Role)</label>
+                    <select className="w-full bg-neutral-900 border border-neutral-700 rounded p-2 text-white focus:border-yellow-500" value={userForm.role} onChange={e => setUserForm({...userForm, role: e.target.value})}>
+                        <option value="user">Piloto</option>
                         <option value="admin">Administrador</option>
                     </select>
                 </div>
-                <div className="md:col-span-2">
+                <div className="lg:col-span-3">
                     <label className="block text-xs text-gray-500 uppercase font-bold mb-1">Endereço Completo</label>
-                    <input 
-                        className="w-full bg-black border border-gray-700 rounded p-2 text-white" 
-                        value={editingUser.address || ''} 
-                        onChange={e => setEditingUser({...editingUser, address: e.target.value})} 
-                    />
+                    <input className="w-full bg-neutral-900 border border-neutral-700 rounded p-2 text-white focus:border-yellow-500" value={userForm.address} onChange={e => setUserForm({...userForm, address: e.target.value})} placeholder="Rua, Número, Bairro, Cidade - UF" />
                 </div>
-            </div>
+
+                <div className="md:col-span-2 lg:col-span-3 flex justify-end gap-3 mt-6 pt-4 border-t border-gray-800 bg-[#111] sticky bottom-0">
+                    <button type="button" onClick={handleCancelEditUser} className="px-6 py-2 rounded bg-neutral-700 hover:bg-neutral-600 text-white font-bold text-sm transition">Cancelar</button>
+                    <button type="submit" className="px-8 py-2 rounded bg-green-600 hover:bg-green-700 text-white font-bold text-sm uppercase flex items-center gap-2 shadow-lg hover:shadow-green-900/20 transition">
+                        <CheckCircle size={18} /> Salvar Alterações
+                    </button>
+                </div>
+            </form>
         </div>
-      </div>
-      
-      <div className="p-6 border-t border-gray-800 flex justify-end gap-2 bg-[#111] sticky bottom-0">
-        <button onClick={() => setEditingUser(null)} className="px-4 py-2 rounded border border-gray-700 text-gray-300 hover:text-white">Cancelar</button>
-        <button onClick={handleSaveUser} className="bg-[#D80000] hover:bg-red-700 text-white font-bold px-6 py-2 rounded flex items-center gap-2">
-           <Save size={18} /> Salvar Alterações
-        </button>
-      </div>
     </div>
-  </div>
 )}
              <div className="bg-neutral-800 rounded-xl border border-neutral-700 overflow-hidden shadow-2xl">
                 <div className="p-6 border-b border-neutral-700 bg-neutral-900 flex justify-between items-center">
