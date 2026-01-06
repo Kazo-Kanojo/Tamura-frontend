@@ -63,115 +63,130 @@ const AdminDashboard = () => {
 // --- FUNÇÃO GERAR PDF INDIVIDUAL ---
 const generateIndividualPDF = (reg) => {
   const doc = new jsPDF();
-  const marginLeft = 20;
-  const pageWidth = 210; 
-  const maxContentWidth = pageWidth - marginLeft - 20; 
-  const indent = 25;
-  const maxIndentedWidth = maxContentWidth - indent; 
+  
+  // --- CONFIGURAÇÕES DE LAYOUT ---
+  const marginLeft = 15;
+  const marginRight = 15;
+  const pageWidth = 210;
+  const contentWidth = pageWidth - marginLeft - marginRight;
+  let y = 20; // Posição vertical inicial
 
-  let y = 20; 
+  // --- CABEÇALHO ---
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(16);
+  doc.text("FICHA DE INSCRIÇÃO", pageWidth / 2, y, { align: "center" });
+  
+  y += 15; // Espaço após título
+
+  // --- FUNÇÃO AUXILIAR PARA CAMPOS ---
+  // Desenha: Rótulo em Negrito + Valor Normal + Linha sublinhada
+  const drawField = (label, value, xPos, width, isBoldValue = false) => {
+      doc.setFontSize(11);
+      doc.setFont("helvetica", "bold");
+      doc.text(label, xPos, y);
+      
+      const labelWidth = doc.getTextWidth(label) + 2;
+      const valueSafe = value ? String(value).toUpperCase() : "";
+      
+      doc.setFont("helvetica", isBoldValue ? "bold" : "normal");
+      doc.text(valueSafe, xPos + labelWidth, y);
+      
+      // Desenha linha pontilhada ou contínua para preenchimento visual
+      doc.setLineWidth(0.1);
+      doc.line(xPos + labelWidth, y + 1, xPos + width, y + 1);
+  };
+
+  // --- LINHA 1: Equipa e Data Nascimento ---
+  drawField("Equipe:", reg.team, marginLeft, 80);
+  
+  // Tratamento seguro para data
+  let dataNasc = "";
+  if (reg.birth_date) {
+      // Tenta ajustar fuso horário para não pegar dia anterior
+      const dateObj = new Date(reg.birth_date);
+      dateObj.setMinutes(dateObj.getMinutes() + dateObj.getTimezoneOffset());
+      dataNasc = dateObj.toLocaleDateString('pt-BR');
+  }
+  drawField("Dt. Nasc.:", dataNasc, marginLeft + 85, 90);
+  
+  y += 10; 
+
+  // --- LINHA 2: Nome Completo (Destaque) ---
+  drawField("Piloto:", reg.pilot_name, marginLeft, contentWidth, true);
+  
+  y += 10;
+
+  // --- LINHA 3: RG, CPF e Convênio ---
+  drawField("RG:", reg.rg, marginLeft, 55);
+  drawField("CPF:", reg.cpf, marginLeft + 60, 55);
+  drawField("Convênio:", reg.medical_insurance, marginLeft + 120, 60);
+
+  y += 10;
+
+  // --- LINHA 4: Endereço ---
+  drawField("Endereço:", reg.address, marginLeft, contentWidth);
+
+  y += 10;
+
+  // --- LINHA 5: Telefones ---
+  drawField("Tel:", reg.phone, marginLeft, 80);
+  drawField("Emergência:", reg.emergency_phone, marginLeft + 85, 95);
+
+  y += 15;
+
+  // --- BOX DE DADOS DA CORRIDA ---
+  doc.setFillColor(240, 240, 240);
+  doc.rect(marginLeft, y - 5, contentWidth, 20, 'F');
+  doc.rect(marginLeft, y - 5, contentWidth, 20, 'S'); // Borda
 
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(18);
-  doc.text("FICHA DE INSCRIÇÃO", 105, y, { align: "center" });
-  
-  doc.setFontSize(12);
+  doc.text("CATEGORIAS:", marginLeft + 2, y + 2);
   doc.setFont("helvetica", "normal");
-  y += 15; 
+  doc.text(reg.categories || "", marginLeft + 35, y + 2);
 
-  const lineHeight = 12;
-
-  doc.text(`Equipe.: _________________`, marginLeft, y);
-  const dataNasc = reg.birth_date ? new Date(reg.birth_date).toLocaleDateString('pt-BR') : '____/____/______';
-  doc.text(`Data de Nascimento.: ${dataNasc}`, 85, y);
-  doc.text(`Apelido: _______________________`, 145, y);
-
-  y += lineHeight;
-  doc.text(`Nome completo.: ${reg.pilot_name?.toUpperCase() || '____________________________________________________________________'}`, marginLeft, y);
-
-  y += lineHeight;
-  doc.text(`RG: ________________________`, marginLeft, y);
-  doc.text(`CPF: ${reg.cpf || '__________________________'}`, 85, y);
-  doc.text(`Convênio Médico: ___________________`, 145, y);
-
-  y += lineHeight;
-  doc.text(`Endereço: ____________________________________________________________________________________`, marginLeft, y);
-
-  y += lineHeight;
-  doc.text(`Tel.: ${reg.phone || '(      )_______________'}`, marginLeft, y);
-  doc.text(`Tel. Urgência: (      ) ______________________`, 95, y);
-
-  y += 15; 
-  const numCats = reg.categories ? reg.categories.split(',').length : '    ';
-  doc.text(`Total de categorias irá participar (  ${numCats}  )`, marginLeft, y);
-  
   doc.setFont("helvetica", "bold");
-  doc.setFillColor(230, 230, 230); 
-  doc.rect(140, y - 5, 50, 8, 'F');
-  doc.text(`CHIP ID: ${reg.chip_id || '__________'}`, 142, y+1);
+  doc.text("MOTO #:", marginLeft + 2, y + 10);
   doc.setFont("helvetica", "normal");
+  doc.setFontSize(14);
+  doc.text(reg.pilot_number || "___", marginLeft + 22, y + 10);
 
-  y += 12;
-  const catsArray = reg.categories ? reg.categories.split(', ') : [];
-  doc.setFontSize(11);
-  doc.text(`Categorias: ${catsArray.slice(0, 5).join(' | ') || '____________________________________________________'}`, marginLeft, y);
-  doc.text(`MOTO: ______________ # ${reg.pilot_number || '____'}`, 140, y);
+  // Chip box
+  if(reg.chip_id) {
+      doc.setFontSize(11);
+      doc.setFont("helvetica", "bold");
+      doc.text(`CHIP: ${reg.chip_id}`, marginLeft + 140, y + 8);
+  }
 
-  y += 20; 
-  doc.setFont("helvetica", "bold");
+  y += 25;
+
+  // --- TERMO DE RESPONSABILIDADE ---
   doc.setFontSize(12);
-  doc.text("Termo de Responsabilidade", marginLeft, y);
-  
+  doc.setFont("helvetica", "bold");
+  doc.text("Termo de Responsabilidade", pageWidth / 2, y, { align: "center" });
   y += 7;
-  doc.setFont("Times", "normal");
-  doc.setFontSize(10); 
   
-  const termoTexto = "Declaro para os devidos fins, que estou participando deste evento por minha livre e espontânea vontade e estou ciente que o Velocross, trata-se de uma atividade esportiva motorizada e sou conhecedor de todos os riscos envolvidos no motociclismo off Road. Declaro também que me encontro fisicamente, clinicamente apto a participar e não fiz uso de bebida alcoolica ou drogas. Concordo em observar e acatar qualquer decisão oficial dos organizadores do evento relativa a possibilidade de não terminá-lo NO TEMPO HABITUAL, por conta de chuvas, acidentes, etc. Assumo ainda todos os riscos competir na CORRIDAS E CAMPEONATOS DE VELOCROSS , isentando os seus organizadores bem como seus patrocinadores, apoiadores, Prefeitura Municipal, de quaisquer acidentes que eu venha a me envolver, durante as competições. contatos com outros participantes, efeito do clima, incluindo aqui alto calor e suas consequências, condições de tráfego e do circuito além de outras consequências que possam ter origem em minha falta de condicionamento físico para participar do mencionado evento. de parte das entidades/ pessoas aqui nominadas. Estou ciente que qualquer atendimento médico que for necessário ocasionado por acidente na competição será direcionado a rede publica de atendimento médico, “SUS”. Concedo ainda permissão aos organizadores do evento e a seus patrocinadores, a utilizarem fotografias, filmagens ou qualquer outra forma que mostre minha participação NAS CORRIDAS E CAMPEONATOS DE VELOCROSS, bem como utilizar das imagens para divulgação, prospecção, apresentação e outras finalidades da organização.";
-  const termoLines = doc.splitTextToSize(termoTexto, maxContentWidth);
+  doc.setFont("times", "normal");
+  doc.setFontSize(9); 
+  
+  const termoTexto = "Declaro para os devidos fins, que estou participando deste evento por minha livre e espontânea vontade e estou ciente que o Velocross, trata-se de uma atividade esportiva motorizada e sou conhecedor de todos os riscos envolvidos. Declaro também que me encontro fisicamente e clinicamente apto a participar. Assumo todos os riscos de competir, isentando organizadores e patrocinadores de quaisquer acidentes. Autorizo o uso da minha imagem para divulgação do evento.";
+  const termoLines = doc.splitTextToSize(termoTexto, contentWidth);
   doc.text(termoLines, marginLeft, y);
 
-  y += (termoLines.length * 5) + 8; 
+  y += (termoLines.length * 4) + 10; 
 
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(11);
-  doc.setTextColor(180, 0, 0);
-  doc.text("IMPORTANTE:", marginLeft, y);
-  
+  // --- RODAPÉ / ASSINATURA ---
   doc.setFont("helvetica", "normal");
-  doc.setTextColor(0, 0, 0);
-  const aviso1 = " Não será devolvido os valores pagos referente as inscrições em HIPOTESE alguma, bem como não será possível transferi-las para etapas futuras.";
-  const avisoLines1 = doc.splitTextToSize(aviso1, maxIndentedWidth); 
-  doc.text(avisoLines1, marginLeft + indent, y);
-  
-  y += (avisoLines1.length * 5) + 4;
-  doc.setFont("helvetica", "bold");
-  doc.text("É PROIBIDO", marginLeft, y);
-  doc.setFont("helvetica", "normal");
-  const aviso2 = " a transferência de inscrições do piloto para outro piloto. Caso não seja possível terminar a etapa devido as condições climáticas, condições da pista, quebra de horário,";
-  const avisoLines2 = doc.splitTextToSize(aviso2, maxIndentedWidth); 
-  doc.text(avisoLines2, marginLeft + indent, y);
-
-  y += (avisoLines2.length * 5) + 4;
-  doc.setFont("helvetica", "bold");
-  doc.setTextColor(180, 0, 0);
-  doc.text("NÃO HAVERÁ", marginLeft, y);
-  doc.setTextColor(0, 0, 0);
-  doc.setFont("helvetica", "normal");
-  const aviso3 = " compensação ou devolução de valores pagos, as categorias não realizadas, terão pontuação dobrada na próxima etapa.";
-  const avisoLines3 = doc.splitTextToSize(aviso3, maxIndentedWidth); 
-  doc.text(avisoLines3, marginLeft + indent, y);
-
-  const footerY = 270;
-  y = y < footerY - 20 ? footerY : y + 20;
-
-  const hoje = new Date().toLocaleDateString('pt-BR');
-  doc.text(`São Paulo-SP, ${hoje}`, marginLeft, y);
-  doc.line(110, y, 190, y);
-  y += 5;
   doc.setFontSize(10);
-  doc.text("Assinatura do Piloto ou Responsável", 150, y, { align: "center" });
+  
+  const hoje = new Date().toLocaleDateString('pt-BR');
+  doc.text(`Data: ${hoje}`, marginLeft, y + 10);
+  
+  doc.line(marginLeft + 60, y + 10, contentWidth, y + 10);
+  doc.text("Assinatura do Piloto ou Responsável", marginLeft + 90, y + 15);
 
-  doc.save(`Ficha_${reg.pilot_name.replace(/\s+/g, '_')}.pdf`);
+  // Salvar
+  const cleanName = reg.pilot_name ? reg.pilot_name.replace(/[^a-zA-Z0-9]/g, '_') : 'ficha';
+  doc.save(`Ficha_${cleanName}.pdf`);
 };
   // --- HELPER: FORMATAR DATA PARA INPUT (YYYY-MM-DD) ---
   const formatDateForInput = (dateValue) => {
