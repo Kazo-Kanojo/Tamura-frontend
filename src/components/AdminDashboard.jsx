@@ -1011,6 +1011,7 @@ const AdminDashboard = () => {
                                         <th className="p-4">Piloto</th>
                                         <th className="p-4">Contato</th>
                                         <th className="p-4 text-center">Nº Moto</th>
+                                        <th className="p-4">Modelo Moto</th>
                                         <th className="p-4">Categorias</th>
                                         <th className="p-4">Pacote</th>
                                         <th className="p-4 text-right">Valor</th>
@@ -1027,6 +1028,7 @@ const AdminDashboard = () => {
                                                 <td className="p-4 font-bold text-white">{reg.pilot_name}<div className="text-xs text-gray-500 font-normal">{reg.cpf}</div></td>
                                                 <td className="p-4 flex items-center gap-2">{reg.phone}{reg.phone && (<a href={`https://wa.me/55${reg.phone.replace(/\D/g, '')}`} target="_blank" rel="noreferrer" className="text-green-500 hover:text-green-400 p-1 bg-green-900/20 rounded" title="WhatsApp"><MessageCircle size={16} /></a>)}</td>
                                                 <td className="p-4 text-center"><span className="font-mono font-bold text-yellow-500">{reg.pilot_number}</span></td>
+                                                <td className="p-4 text-sm text-gray-300">{reg.modelo_moto || "---"}</td>
                                                 <td className="p-4 text-xs max-w-xs truncate" title={reg.categories}>{reg.categories}</td>
                                                 <td className="p-4 text-xs text-gray-400">{reg.plan_name}</td>
                                                 <td className="p-4 text-right font-bold text-white">R$ {reg.total_price},00</td>
@@ -1235,6 +1237,7 @@ const AdminDashboard = () => {
                           <tr className="bg-neutral-900/50 text-gray-400 text-xs uppercase tracking-wider border-b border-neutral-700">
                               <th className="p-4">Piloto</th>
                               <th className="p-4 text-center">Nº Moto</th>
+                              <th className="p-4">Modelo Moto</th>
                               <th className="p-4 text-center">Ano Nasc.</th>
                               <th className="p-4 text-center text-blue-400">Chip ID</th>
                               <th className="p-4 hidden md:table-cell">CPF</th>
