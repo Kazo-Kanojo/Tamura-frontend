@@ -77,7 +77,7 @@ const UserDashboard = () => {
               team: user.team || '',
               address: user.address || '',
               bike_number: user.bike_number || '',
-                modeloMoto: user.modelo_moto || ''
+                modeloMoto: user.modeloMoto || ''
           });
           setIsProfileOpen(true);
       }
