@@ -22,7 +22,7 @@ const UserDashboard = () => {
   const [profileData, setProfileData] = useState({
     name: '', email: '', phone: '', cpf: '', rg: '', 
     birth_date: '', emergency_phone: '', medical_insurance: '', 
-    team: '', address: '', bike_number: '',modelo_moto: ''
+    team: '', address: '', bike_number: '',modeloMoto: ''
   });
 
   // HELPER DE AUTH
@@ -77,7 +77,7 @@ const UserDashboard = () => {
               team: user.team || '',
               address: user.address || '',
               bike_number: user.bike_number || '',
-                modelo_moto: user.modelo_moto || ''
+              modeloMoto: user.modeloMoto || ''
           });
           setIsProfileOpen(true);
       }
@@ -442,7 +442,7 @@ const UserDashboard = () => {
                             </div>
                             <div>
                                 <label className="block text-xs text-gray-500 uppercase font-bold mb-1">Modelo da Moto</label>
-                                <input type="text" name="modelo_moto" value={profileData.modelo_moto} onChange={handleProfileChange} className="w-full bg-black border border-gray-700 rounded-lg p-3 text-white focus:border-[#D80000] focus:outline-none" />
+                                <input type="text" name="modeloMoto" value={profileData.modeloMoto} onChange={handleProfileChange} className="w-full bg-black border border-gray-700 rounded-lg p-3 text-white focus:border-[#D80000] focus:outline-none" />
                             </div>
                             <div className="md:col-span-2">
                                 <label className="block text-xs text-gray-500 uppercase font-bold mb-1">Endereço Completo</label>
