@@ -507,16 +507,23 @@ const AdminDashboard = () => {
 
   // --- BOX DE DADOS DA CORRIDA ---
   doc.setFillColor(245, 245, 245);
+  // Aumentei um pouco a altura fixa inicial do box para garantir (de 25 para 30 se quiser, ou manter 25)
   doc.rect(marginLeft, y - 5, contentWidth, 25, 'F');
   doc.rect(marginLeft, y - 5, contentWidth, 25, 'S');
 
-  // Categorias
-  doc.setFont("helvetica", "bold");
-  doc.text("CATEGORIAS:", marginLeft + 2, y + 2);
-  doc.setFont("helvetica", "normal");
+  // Cálculos das Categorias
   const cats = reg.categories || "";
-  const splitCats = doc.splitTextToSize(cats, contentWidth - 35);
-  doc.text(splitCats, marginLeft + 35, y + 2);
+  // Conta quantas categorias existem (separa por vírgula e remove espaços vazios)
+  const catsCount = cats.split(',').filter(c => c.trim() !== '').length;
+
+  // Exibe o Título com a Quantidade
+  doc.setFont("helvetica", "bold");
+  // AQUI ESTÁ A MUDANÇA: Adicionei (${catsCount})
+  doc.text(`CATEGORIAS (${catsCount}):`, marginLeft + 2, y + 2);
+
+  doc.setFont("helvetica", "normal");
+  const splitCats = doc.splitTextToSize(cats, contentWidth - 45); // Ajustei a largura para não bater no texto
+  doc.text(splitCats, marginLeft + 45, y + 2); // Ajustei a posição X para dar espaço ao "CATEGORIAS (X):"
 
   const catHeight = splitCats.length * 5; 
   
