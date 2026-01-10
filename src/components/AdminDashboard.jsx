@@ -286,7 +286,7 @@ const AdminDashboard = () => {
         team: user.team || '',
         emergency_phone: user.emergency_phone || '',
         address: user.address || '',
-        modeloMoto: user.modelo_moto || '' // <--- CARREGA O MODELO DA MOTO
+        modeloMoto: user.modeloMoto || '' // <--- CARREGA O MODELO DA MOTO
     });
   };
 
@@ -529,7 +529,7 @@ const AdminDashboard = () => {
   doc.setFontSize(12);
   
   // Concatena Modelo e Número
-  const modelo = reg.modelo_moto || "N/A";
+  const modelo = reg.modeloMoto || "N/A";
   const numero = reg.pilot_number || "___";
   const textoMoto = `${modelo} - Nº ${numero}`;
   
