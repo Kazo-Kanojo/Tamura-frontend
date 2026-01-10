@@ -23,9 +23,11 @@ const [formData, setFormData] = useState({
   emergency_phone: '',    
   medical_insurance: '',  
   team: '',               
-  address: '',            
+  address: '',
+  bike_type: '',            
   bike_number: '', 
-  birth_date: ''
+  birth_date: '',
+  modeloMoto: ''
 });
 
   useEffect(() => {
@@ -146,6 +148,17 @@ const [formData, setFormData] = useState({
                     <div>
                         <label className="block text-xs text-gray-500 uppercase font-bold mb-1">Nascimento</label>
                         <input type="date" name="birth_date" className="w-full bg-[#0a0a0a] border border-gray-700 rounded-lg p-3 text-sm text-gray-200" value={formData.birth_date} onChange={handleChange} required />
+                    </div>
+                    <div>
+                        <label className="block text-xs text-gray-500 uppercase font-bold mb-1">Modelo da Moto</label>
+                        <input 
+                            type="text" 
+                            name="modeloMoto" 
+                            placeholder="Ex: CRF 250F, KTM..." 
+                            className="w-full bg-[#0a0a0a] border border-gray-700 rounded-lg p-3 text-sm text-white" 
+                            value={formData.modeloMoto} 
+                            onChange={handleChange} 
+                        />
                     </div>
                     <div>
                         <label className="block text-xs text-gray-500 uppercase font-bold mb-1">Nº Moto</label>

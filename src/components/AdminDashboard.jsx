@@ -30,8 +30,9 @@ const AdminDashboard = () => {
   const [userForm, setUserForm] = useState({ 
     id: null, name: '', email: '', phone: '', bike_number: '', 
     chip_id: '', role: 'user', birth_date: '',
-    rg: '', cpf: '', medical_insurance: '', team: '', emergency_phone: '', address: ''
-});
+    rg: '', cpf: '', medical_insurance: '', team: '', emergency_phone: '', address: '',
+    modeloMoto: '' // <--- CAMPO DO MODELO DA MOTO
+  });
 
   // --- ESTADOS DA PONTUAÇÃO ---
   const [selectedStage, setSelectedStage] = useState(null);
@@ -58,8 +59,6 @@ const AdminDashboard = () => {
   const [catSearch, setCatSearch] = useState('');
   const [editingCat, setEditingCat] = useState(null);
   const [newCatName, setNewCatName] = useState('');
-
-
 
   // --- HELPER: FORMATAR DATA PARA INPUT (YYYY-MM-DD) ---
   const formatDateForInput = (dateValue) => {
@@ -95,10 +94,8 @@ const AdminDashboard = () => {
     }
   }, [navigate]);
 
-  // Carregamentos Iniciais
   useEffect(() => { fetchStages(); }, []);
   
-  // ATUALIZAÇÃO: Carrega categorias também nas abas de Scores e Registrations
   useEffect(() => { 
       if (activeTab === 'users') fetchUsers(); 
       if (activeTab === 'categories' || activeTab === 'scores' || activeTab === 'registrations') fetchCategories();
@@ -142,9 +139,7 @@ const AdminDashboard = () => {
     } catch (error) { console.error(error); }
   };
 
-  // --- CATEGORIAS (FUNCIONALIDADE DINÂMICA) ---
   const fetchCategories = async () => {
-      // Não ativamos setLoading aqui para não piscar a tela se já tiver dados
       try {
           const res = await fetch(`${API_URL}/api/categories`);
           if (res.ok) setCategoriesList(await res.json());
@@ -290,16 +285,17 @@ const AdminDashboard = () => {
         medical_insurance: user.medical_insurance || '',
         team: user.team || '',
         emergency_phone: user.emergency_phone || '',
-        address: user.address || ''
+        address: user.address || '',
+        modeloMoto: user.modelo_moto || '' // <--- CARREGA O MODELO DA MOTO
     });
-};
+  };
 
   const handleCancelEditUser = () => { 
       setEditingUser(null); 
-      setUserForm({ id: null, name: '', email: '', phone: '', bike_number: '', chip_id: '', role: 'user', birth_date: '' }); 
+      setUserForm({ id: null, name: '', email: '', phone: '', bike_number: '', chip_id: '', role: 'user', birth_date: '', modeloMoto: '' }); 
   };
 
-const handleSaveUser = async (e) => {
+  const handleSaveUser = async (e) => {
       e.preventDefault(); 
       setLoading(true);
       try {
@@ -309,7 +305,6 @@ const handleSaveUser = async (e) => {
               body: JSON.stringify(userForm)
           });
 
-          // CORREÇÃO: Ler a resposta JSON para saber o erro caso não seja 200 OK
           const data = await res.json();
 
           if (res.ok) { 
@@ -317,7 +312,6 @@ const handleSaveUser = async (e) => {
               setEditingUser(null); 
               fetchUsers(); 
           } else {
-              // CORREÇÃO: Mostrar o erro real retornado pelo backend
               showMessage(data.error || "Erro ao atualizar usuário.", "error");
           }
       } catch (error) { 
@@ -450,107 +444,104 @@ const handleSaveUser = async (e) => {
       }
   };
 
- // --- FUNÇÃO GERAR PDF INDIVIDUAL ---
-const generateIndividualPDF = (reg) => {
+ // --- FUNÇÃO GERAR PDF (CORRIGIDA E ATUALIZADA) ---
+ const generateIndividualPDF = (reg) => {
   const doc = new jsPDF();
   
-  // --- CONFIGURAÇÕES DE LAYOUT ---
   const marginLeft = 15;
-  const marginRight = 15;
   const pageWidth = 210;
-  const contentWidth = pageWidth - marginLeft - marginRight;
-  let y = 20; // Posição vertical inicial
+  const contentWidth = pageWidth - marginLeft - 15;
+  let y = 20;
 
   // --- CABEÇALHO ---
   doc.setFont("helvetica", "bold");
   doc.setFontSize(16);
   doc.text("FICHA DE INSCRIÇÃO", pageWidth / 2, y, { align: "center" });
-  
   y += 15;
 
-  // --- FUNÇÃO AUXILIAR PARA CAMPOS (Evita sobreposição) ---
   const drawField = (label, value, xPos, width, isBoldValue = false) => {
       doc.setFontSize(10);
       doc.setFont("helvetica", "bold");
       doc.text(label, xPos, y);
-      
       const labelWidth = doc.getTextWidth(label) + 2;
       const valueSafe = value ? String(value).toUpperCase() : "";
-      
       doc.setFont("helvetica", isBoldValue ? "bold" : "normal");
       doc.text(valueSafe, xPos + labelWidth, y);
-      
-      // Linha de preenchimento
       doc.setLineWidth(0.1);
       doc.line(xPos + labelWidth, y + 1, xPos + width, y + 1);
   };
 
   // --- DADOS DO PILOTO ---
-  // Linha 1
-  drawField("Equipe:", reg.team, marginLeft, 90);
-  
+  // Linha 1: Piloto
+  drawField("Piloto:", reg.pilot_name, marginLeft, contentWidth, true);
+  y += 10;
+
+  // Linha 2: Nascimento e RG
   let dataNasc = "";
   if (reg.birth_date) {
       const dateObj = new Date(reg.birth_date);
       dateObj.setMinutes(dateObj.getMinutes() + dateObj.getTimezoneOffset());
       dataNasc = dateObj.toLocaleDateString('pt-BR');
   }
-  drawField("Dt. Nasc.:", dataNasc, marginLeft + 95, 80);
-  
-  y += 10; 
-
-  // Linha 2
-  drawField("Piloto:", reg.pilot_name, marginLeft, contentWidth, true);
-  
+  drawField("Dt. Nasc.:", dataNasc, marginLeft, 80);
+  drawField("RG:", reg.rg, marginLeft + 85, 95);
   y += 10;
 
-  // Linha 3
-  drawField("RG:", reg.rg, marginLeft, 60);
-  drawField("CPF:", reg.cpf, marginLeft + 65, 60);
-  drawField("Convênio:", reg.medical_insurance, marginLeft + 130, 50);
-
+  // Linha 3: CPF e Convênio
+  drawField("CPF:", reg.cpf, marginLeft, 80);
+  drawField("Convênio:", reg.medical_insurance, marginLeft + 85, 95);
   y += 10;
 
-  // Linha 4
+  // Linha 4: Contatos
+  drawField("Tel:", reg.phone, marginLeft, 80);
+  drawField("Emergência:", reg.emergency_phone, marginLeft + 85, 95);
+  y += 10;
+
+  // Linha 5: Endereço (Linha Inteira)
   drawField("Endereço:", reg.address, marginLeft, contentWidth);
-
   y += 10;
 
-  // Linha 5
-  drawField("Tel:", reg.phone, marginLeft, 85);
-  drawField("Emergência:", reg.emergency_phone, marginLeft + 90, 90);
-
-  y += 15;
+  // Linha 6: Equipe (AGORA COM LINHA EXCLUSIVA)
+  drawField("Equipe:", reg.team, marginLeft, contentWidth);
+  y += 15; // Espaço extra antes do próximo bloco
 
   // --- BOX DE DADOS DA CORRIDA ---
   doc.setFillColor(245, 245, 245);
-  doc.rect(marginLeft, y - 5, contentWidth, 22, 'F');
-  doc.rect(marginLeft, y - 5, contentWidth, 22, 'S');
+  doc.rect(marginLeft, y - 5, contentWidth, 25, 'F');
+  doc.rect(marginLeft, y - 5, contentWidth, 25, 'S');
 
+  // Categorias
   doc.setFont("helvetica", "bold");
   doc.text("CATEGORIAS:", marginLeft + 2, y + 2);
   doc.setFont("helvetica", "normal");
-  // Quebra de linha se houver muitas categorias
   const cats = reg.categories || "";
-  const splitCats = doc.splitTextToSize(cats, contentWidth - 30);
-  doc.text(splitCats, marginLeft + 30, y + 2);
+  const splitCats = doc.splitTextToSize(cats, contentWidth - 35);
+  doc.text(splitCats, marginLeft + 35, y + 2);
 
-  // Ajusta Y baseado na altura das categorias
   const catHeight = splitCats.length * 5; 
   
+  // SOLUÇÃO: Modelo da Moto + Numeral
+  const yMoto = y + 5 + catHeight;
   doc.setFont("helvetica", "bold");
-  doc.text("MOTO #:", marginLeft + 2, y + 5 + catHeight);
+  doc.text("MOTO:", marginLeft + 2, yMoto);
+  
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(14);
-  doc.text(reg.pilot_number || "___", marginLeft + 20, y + 5 + catHeight);
+  doc.setFontSize(12);
+  
+  // Concatena Modelo e Número
+  const modelo = reg.modelo_moto || "N/A";
+  const numero = reg.pilot_number || "___";
+  const textoMoto = `${modelo} - Nº ${numero}`;
+  
+  doc.text(textoMoto.toUpperCase(), marginLeft + 20, yMoto);
 
   if(reg.chip_id) {
       doc.setFontSize(10);
       doc.setFont("helvetica", "bold");
-      doc.text(`CHIP ID: ${reg.chip_id}`, marginLeft + 140, y + 5 + catHeight);
+      doc.text(`CHIP ID: ${reg.chip_id}`, marginLeft + 140, yMoto);
   }
 
-  y += 20 + catHeight; // Espaço após o box
+  y += 25 + catHeight; 
 
   // --- TERMO DE RESPONSABILIDADE ---
   doc.setFontSize(11);
@@ -559,7 +550,7 @@ const generateIndividualPDF = (reg) => {
   y += 6;
   
   doc.setFont("times", "normal");
-  doc.setFontSize(9); // Fonte menor para caber tudo
+  doc.setFontSize(9);
   
   const termoTexto = "Declaro para os devidos fins, que estou participando deste evento por minha livre e espontânea vontade e estou ciente que o Velocross, trata-se de uma atividade esportiva motorizada e sou conhecedor de todos os riscos envolvidos no motociclismo off Road. Declaro também que me encontro fisicamente, clinicamente apto a participar e não fiz uso de bebida alcoolica ou drogas. Concordo em observar e acatar qualquer decisão oficial dos organizadores do evento relativa a possibilidade de não terminá-lo NO TEMPO HABITUAL, por conta de chuvas, acidentes, etc. Assumo ainda todos os riscos competir na CORRIDAS E CAMPEONATOS DE VELOCROSS, isentando os seus organizadores bem como seus patrocinadores, apoiadores, Prefeitura Municipal, de quaisquer acidentes que eu venha a me envolver, durante as competições, contatos com outros participantes, efeito do clima, incluindo aqui alto calor e suas consequências, condições de tráfego e do circuito além de outras consequências que possam ter origem em minha falta de condicionamento físico para participar do mencionado evento de parte das entidades/ pessoas aqui nominadas. Estou ciente que qualquer atendimento médico que for necessário ocasionado por acidente na competição será direcionado a rede publica de atendimento médico, “SUS”. Concedo ainda permissão aos organizadores do evento e a seus patrocinadores, a utilizarem fotografias, filmagens ou qualquer outra forma que mostre minha participação NAS CORRIDAS E CAMPEONATOS DE VELOCROSS, bem como utilizar das imagens para divulgação, prospecção, apresentação e outras finalidades da organização.";
   
@@ -568,16 +559,16 @@ const generateIndividualPDF = (reg) => {
 
   y += (termoLines.length * 3.5) + 5; 
 
-  // --- AVISOS IMPORTANTES ---
+  // --- AVISOS ---
   doc.setFont("helvetica", "bold");
   doc.setFontSize(10);
-  doc.setTextColor(180, 0, 0); // Vermelho
+  doc.setTextColor(180, 0, 0); 
   doc.text("IMPORTANTE:", marginLeft, y);
-  
   y += 5;
+  
   doc.setFont("helvetica", "normal");
   doc.setTextColor(0, 0, 0);
-  doc.setFontSize(8); // Fonte pequena para os avisos
+  doc.setFontSize(8);
 
   const aviso1 = "Não será devolvido os valores pagos referente as inscrições em HIPOTESE alguma, bem como não será possível transferi-las para etapas futuras. É PROIBIDO a transferência de inscrições do piloto para outro piloto.";
   const avisoLines1 = doc.splitTextToSize(aviso1, contentWidth);
@@ -589,23 +580,15 @@ const generateIndividualPDF = (reg) => {
   const avisoLines2 = doc.splitTextToSize(aviso2, contentWidth);
   doc.text(avisoLines2, marginLeft, y);
 
-  // --- RODAPÉ ---
-  // Verifica se o Y estourou a página, se sim, adiciona nova página para assinatura
-  if (y > 250) {
-      doc.addPage();
-      y = 40;
-  } else {
-      y = 265; // Fixa no final da página se houver espaço
-  }
+  // --- ASSINATURA ---
+  if (y > 250) { doc.addPage(); y = 40; } else { y = 270; }
 
   const hoje = new Date().toLocaleDateString('pt-BR');
   doc.setFontSize(10);
   doc.text(`São Paulo-SP, ${hoje}`, marginLeft, y - 15);
-  
   doc.line(marginLeft + 70, y - 5, contentWidth, y - 5);
   doc.text("Assinatura do Piloto ou Responsável", marginLeft + 100, y);
 
-  // Salvar
   const cleanName = reg.pilot_name ? reg.pilot_name.replace(/[^a-zA-Z0-9]/g, '_') : 'ficha';
   doc.save(`Ficha_${cleanName}.pdf`);
 };
@@ -1050,11 +1033,6 @@ const generateIndividualPDF = (reg) => {
                                                 <td className="p-4 text-center"><button onClick={() => togglePaymentStatus(reg)} className={`px-3 py-1 rounded-full text-xs font-bold uppercase transition border ${reg.status === 'paid' ? 'bg-green-900/20 text-green-500 border-green-900/50 hover:bg-green-900/40' : 'bg-yellow-900/20 text-yellow-500 border-yellow-900/50 hover:bg-yellow-900/40'}`}>{reg.status === 'paid' ? 'Pago' : 'Pendente'}</button></td>
                                                 
                                                 <td className="p-4 text-right flex justify-end gap-2">
-                                                    
-
-
-
-
                                                     <button onClick={() => generateIndividualPDF(reg)} className="p-2 rounded text-gray-400 hover:text-blue-500 hover:bg-blue-500/10"  title="Imprimir Ficha de Inscrição">
                                                             <Printer size={16}/>
                                                     </button>
@@ -1188,6 +1166,11 @@ const generateIndividualPDF = (reg) => {
                 <div>
                     <label className="block text-xs text-gray-500 uppercase font-bold mb-1 text-yellow-500">Nº Moto</label>
                     <input className="w-full bg-neutral-900 border border-yellow-900/50 rounded p-2 text-yellow-500 font-bold" value={userForm.bike_number} onChange={e => setUserForm({...userForm, bike_number: e.target.value})} />
+                </div>
+                {/* --- AQUI ESTÁ O NOVO CAMPO: MODELO DA MOTO --- */}
+                <div>
+                    <label className="block text-xs text-gray-500 uppercase font-bold mb-1 text-yellow-500">Modelo da Moto</label>
+                    <input className="w-full bg-neutral-900 border border-yellow-900/50 rounded p-2 text-white" value={userForm.modeloMoto} onChange={e => setUserForm({...userForm, modeloMoto: e.target.value})} placeholder="Ex: CRF 250F, KTM..." />
                 </div>
                 <div>
                     <label className="block text-xs text-gray-500 uppercase font-bold mb-1 text-blue-400">Chip ID</label>
