@@ -529,7 +529,7 @@ const AdminDashboard = () => {
   doc.setFontSize(12);
   
   // Concatena Modelo e Número
-  const modelo = reg.modeloMoto || "N/A";
+  const modelo = reg.modelo_moto || "N/A";
   const numero = reg.pilot_number || "___";
   const textoMoto = `${modelo} - Nº ${numero}`;
   
