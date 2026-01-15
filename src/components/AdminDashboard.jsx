@@ -286,7 +286,7 @@ const AdminDashboard = () => {
         team: user.team || '',
         emergency_phone: user.emergency_phone || '',
         address: user.address || '',
-        modeloMoto: user.modeloMoto || '' // <--- CARREGA O MODELO DA MOTO
+        modeloMoto: user.modelo_moto || '' // <--- CARREGA O MODELO DA MOTO
     });
   };
 
@@ -536,7 +536,7 @@ const AdminDashboard = () => {
   doc.setFontSize(12);
   
   // Concatena Modelo e Número
-  const modelo = reg.modelo_moto || "N/A";
+  const modelo = reg.modelo_moto || "_____";
   const numero = reg.pilot_number || "___";
   const textoMoto = `${modelo} - Nº ${numero}`;
   
@@ -1262,17 +1262,63 @@ const AdminDashboard = () => {
                              )
                              .map((user) => (
                                 <tr key={user.id} className={`hover:bg-neutral-700/30 transition group ${editingUser === user.id ? 'bg-yellow-900/10' : ''}`}>
-                                    <td className="p-4 font-bold text-white capitalize">{user.name}<div className="text-xs text-gray-500 font-normal lowercase">{user.email}</div></td>
-                                    <td className="p-4 text-center"><span className="font-mono font-bold text-yellow-500 bg-yellow-500/10 px-2 py-1 rounded border border-yellow-500/20">{user.bike_number||'-'}</span></td>
+                                    {/* Coluna: Piloto */}
+                                    <td className="p-4 font-bold text-white capitalize">
+                                        {user.name}
+                                        <div className="text-xs text-gray-500 font-normal lowercase">{user.email}</div>
+                                    </td>
                                     
+                                    {/* Coluna: Nº Moto */}
+                                    <td className="p-4 text-center">
+                                        <span className="font-mono font-bold text-yellow-500 bg-yellow-500/10 px-2 py-1 rounded border border-yellow-500/20">
+                                            {user.bike_number || '-'}
+                                        </span>
+                                    </td>
+                                    
+                                    {/* Coluna: Modelo Moto (Adicionada para alinhar com o th) */}
+                                    <td className="p-4 text-center text-gray-300">
+                                        {user.modelo_moto || '--'}
+                                    </td>
+                                    
+                                    {/* Coluna: Ano Nasc. */}
                                     <td className="p-4 text-center font-bold text-gray-300">
                                         {user.birth_date ? new Date(user.birth_date).getUTCFullYear() : '-'}
                                     </td>
 
-                                    <td className="p-4 text-center">{user.chip_id?(<span className="font-mono text-xs text-blue-400 border border-blue-900 bg-blue-900/20 px-2 py-1 rounded">{user.chip_id}</span>):(<span className="text-xs text-gray-600 italic">--</span>)}</td>
-                                    <td className="p-4 text-gray-500 font-mono text-xs hidden md:table-cell">{user.cpf}</td>
-                                    <td className="p-4 text-center">{user.role==='admin'?(<span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-red-900/20 text-red-500 border border-red-900/50">ADMIN</span>):(<span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-neutral-700 text-gray-400">PILOTO</span>)}</td>
-                                    <td className="p-4 text-right flex justify-end gap-2"><button onClick={() => handleEditUserClick(user)} className="p-2 rounded text-gray-400 hover:text-yellow-400 hover:bg-yellow-400/10"><Edit3 size={16}/></button><button onClick={() => handleDeleteUser(user.id)} className="p-2 rounded text-gray-400 hover:text-red-500 hover:bg-red-500/10"><Trash2 size={16}/></button></td>
+                                    {/* Coluna: Chip ID */}
+                                    <td className="p-4 text-center">
+                                        {user.chip_id ? (
+                                            <span className="font-mono text-xs text-blue-400 border border-blue-900 bg-blue-900/20 px-2 py-1 rounded">
+                                                {user.chip_id}
+                                            </span>
+                                        ) : (
+                                            <span className="text-xs text-gray-600 italic">--</span>
+                                        )}
+                                    </td>
+
+                                    {/* Coluna: CPF */}
+                                    <td className="p-4 text-gray-500 font-mono text-xs hidden md:table-cell">
+                                        {user.cpf}
+                                    </td>
+
+                                    {/* Coluna: Função */}
+                                    <td className="p-4 text-center">
+                                        {user.role === 'admin' ? (
+                                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-red-900/20 text-red-500 border border-red-900/50">ADMIN</span>
+                                        ) : (
+                                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-neutral-700 text-gray-400">PILOTO</span>
+                                        )}
+                                    </td>
+
+                                    {/* Coluna: Ações */}
+                                    <td className="p-4 text-right flex justify-end gap-2">
+                                        <button onClick={() => handleEditUserClick(user)} className="p-2 rounded text-gray-400 hover:text-yellow-400 hover:bg-yellow-400/10">
+                                            <Edit3 size={16}/>
+                                        </button>
+                                        <button onClick={() => handleDeleteUser(user.id)} className="p-2 rounded text-gray-400 hover:text-red-500 hover:bg-red-500/10">
+                                            <Trash2 size={16}/>
+                                        </button>
+                                    </td>
                                 </tr>
                              ))
                          ) : (<tr><td colSpan="7" className="p-12 text-center text-gray-500 italic">{loading?"...":"Nenhum piloto."}</td></tr>)}
