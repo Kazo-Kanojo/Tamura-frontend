@@ -19,7 +19,7 @@ const AdminDashboard = () => {
   const [message, setMessage] = useState({ text: '', type: '' });
 
   // --- ESTADOS DO CRUD DE EVENTOS ---
-  const [formData, setFormData] = useState({ id: null, name: '', location: '', date: '', end_date: '' });
+  const [formData, setFormData] = useState({ id: null, name: '', location: '', date: '', end_date: '', map_link: '' });
   const [imageFile, setImageFile] = useState(null);
 
   // --- ESTADOS DE USUÁRIOS ---
@@ -219,6 +219,7 @@ const AdminDashboard = () => {
     dataToSend.append('location', formData.location);
     dataToSend.append('date', formData.date);
     dataToSend.append('end_date', formData.end_date);
+    dataToSend.append('map_link', formData.map_link);
     if (imageFile) dataToSend.append('image', imageFile);
 
     try {
@@ -296,16 +297,17 @@ const AdminDashboard = () => {
         name: stage.name, 
         location: stage.location, 
         date: stage.date,
-        end_date: stage.end_date || '' 
+        end_date: stage.end_date || '',
+        map_link: stage.map_link || '' // <--- Carrega o link
     });
     setImageFile(null);
     window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
+};
   
   const resetForm = () => { 
-      setFormData({ id: null, name: '', location: '', date: '', end_date: '' }); 
-      setImageFile(null); 
-  };
+    setFormData({ id: null, name: '', location: '', date: '', end_date: '', map_link: '' }); 
+    setImageFile(null); 
+};
 
   // --- USUÁRIOS ---
   const fetchUsers = async () => {
@@ -371,15 +373,26 @@ const AdminDashboard = () => {
       }
   };
 
-  const handleDeleteUser = async (id) => {
-      if(!window.confirm("Tem certeza?")) return;
+const handleDeleteUser = async (id) => {
+      if(!window.confirm("Tem certeza que deseja remover este piloto? Todas as inscrições dele também serão apagadas.")) return;
+      
       try { 
-          await fetch(`${API_URL}/api/users/${id}`, { 
+          const res = await fetch(`${API_URL}/api/users/${id}`, { 
               method: 'DELETE',
               headers: getAuthHeaders()
           }); 
-          showMessage("Removido.", "success"); fetchUsers(); 
-      } catch (e) { showMessage("Erro", "error"); }
+
+          const data = await res.json();
+
+          if (res.ok) {
+              showMessage("Piloto removido com sucesso.", "success"); 
+              fetchUsers(); 
+          } else {
+              showMessage(data.error || "Erro ao remover.", "error");
+          }
+      } catch (e) { 
+          showMessage("Erro de conexão.", "error"); 
+      }
   };
 
   // --- PONTUAÇÃO ---
@@ -754,7 +767,14 @@ const AdminDashboard = () => {
               <form onSubmit={handleSaveStage} className="space-y-4">
                 <div><label className="text-xs text-gray-500 font-bold uppercase ml-1">Nome</label><input className="w-full bg-neutral-900 border border-neutral-700 rounded p-2 text-white" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} /></div>
                 <div><label className="text-xs text-gray-500 font-bold uppercase ml-1">Local</label><input className="w-full bg-neutral-900 border border-neutral-700 rounded p-2 text-white" value={formData.location} onChange={e => setFormData({...formData, location: e.target.value})} /></div>
-                
+                <div>
+                    <label className="text-xs text-gray-500 font-bold uppercase ml-1">Link Google Maps</label>
+                    <input 
+                        className="w-full bg-neutral-900 border border-neutral-700 rounded p-2 text-white text-sm" 
+                        value={formData.map_link} 
+                        onChange={e => setFormData({...formData, map_link: e.target.value})} 
+                        placeholder="https://maps.google.com/..."/>
+                </div>
                 <div><label className="text-xs text-gray-500 font-bold uppercase ml-1">Data Início</label><input type="date" className="w-full bg-neutral-900 border border-neutral-700 rounded p-2 text-white" value={formData.date} onChange={e => setFormData({...formData, date: e.target.value})} /></div>
                 
                 <div>

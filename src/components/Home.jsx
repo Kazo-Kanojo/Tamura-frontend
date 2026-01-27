@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom"; // Importe useNavigate
+import { Link, useNavigate } from "react-router-dom";
 import Navbar from "./Navbar";
 import EventCard from "./EventCard";
 import Footer from "./Footer";
@@ -7,7 +7,7 @@ import { Timer, Award, Users, CheckCircle, Phone, Mail, MapPin, Share, Download,
 import API_URL from "../api"; 
 
 const Home = () => {
-  const navigate = useNavigate(); // Hook de navegação
+  const navigate = useNavigate();
   const [events, setEvents] = useState([]);
 
   // --- ESTADOS PARA O PWA ---
@@ -17,21 +17,20 @@ const Home = () => {
   const [isStandalone, setIsStandalone] = useState(false);
 
   useEffect(() => {
-    // 0. VERIFICAÇÃO DE AUTO-LOGIN (Adicionado)
-    // Se o usuário já estiver logado, redireciona para a área correta e não mostra a Home
+    // 0. VERIFICAÇÃO DE AUTO-LOGIN
     const userStorage = localStorage.getItem('user');
     if (userStorage) {
       try {
         const user = JSON.parse(userStorage);
         if (user.role === 'admin') {
           navigate('/admin');
-          return; // Para a execução aqui para evitar carregamentos desnecessários
+          return;
         } else {
           navigate('/dashboard');
           return;
         }
       } catch (e) {
-        localStorage.removeItem('user'); // Limpa se estiver corrompido
+        localStorage.removeItem('user');
       }
     }
 
@@ -42,37 +41,29 @@ const Home = () => {
       .catch(err => console.error("Erro ao buscar eventos:", err));
 
     // --- LÓGICA PWA ---
-    
-    // Verificar se já está instalado (Standalone)
     const isInStandaloneMode = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
     setIsStandalone(isInStandaloneMode);
 
-    // Detectar Android/Desktop (Chrome/Edge)
     const handleBeforeInstallPrompt = (e) => {
-      e.preventDefault(); // Impede o mini-infobar padrão
+      e.preventDefault();
       setDeferredPrompt(e);
-      // Opcional: Mostrar o banner automaticamente ao detectar que pode instalar
       setShowInstallBanner(true); 
     };
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
 
-    // Detectar iOS (iPhone/iPad)
     const isIosDevice = /iPhone|iPad|iPod/.test(navigator.userAgent);
     if (isIosDevice && !isInStandaloneMode) {
       setIsIOS(true);
-      // No iOS, mostramos o banner automaticamente ou deixamos o usuário clicar no botão
       setShowInstallBanner(true); 
     }
 
     return () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
     };
-  }, [navigate]); // Adicionado navigate nas dependências
+  }, [navigate]);
 
-  // Função para instalar no Android/Desktop
   const handleInstallClick = async () => {
     if (isIOS) {
-        // Se for iOS, apenas garante que o banner de instruções está visível
         setShowInstallBanner(true);
         return;
     }
@@ -86,12 +77,6 @@ const Home = () => {
       setShowInstallBanner(false);
       setDeferredPrompt(null);
     }
-  };
-
-  const getImageUrl = (url) => {
-    if (!url) return "/bgEvent.jpg";
-    if (url.startsWith('http')) return url; 
-    return `${API_URL}${url}`; 
   };
 
   return (
@@ -120,23 +105,19 @@ const Home = () => {
           </p>
           
           <div className="flex flex-col md:flex-row gap-4 justify-center items-center">
-            {/* Botão Quero Correr */}
             <Link to="/login">
                 <button className="bg-[#D80000] hover:bg-red-700 text-white px-8 py-4 rounded font-black uppercase text-lg tracking-widest transition-transform hover:-translate-y-1 shadow-[0_4px_0_rgb(100,0,0)] hover:shadow-[0_2px_0_rgb(100,0,0)] active:shadow-none active:translate-y-0 animate-bounce-slow">
                 Quero Correr
                 </button>
             </Link>
 
-            {/* --- NOVO BOTÃO: VEJA OS RESULTADOS --- */}
             <Link to="/login">
                 <button className="bg-transparent border-2 border-white hover:bg-white hover:text-[#D80000] text-white px-8 py-4 rounded font-black uppercase text-lg tracking-widest transition-transform hover:-translate-y-1 shadow-lg flex items-center gap-2">
-                    <List className="w-6 h-6" /> {/* Ícone opcional */}
+                    <List className="w-6 h-6" />
                     Veja os Resultados
                 </button>
             </Link>
 
-            {/* --- BOTÃO DE INSTALAÇÃO (HERO) --- */}
-            {/* Só aparece se houver prompt disponível (Android/PC) OU se for iOS e não estiver instalado */}
             {(!isStandalone && (deferredPrompt || isIOS)) && (
                  <button 
                     onClick={handleInstallClick}
@@ -173,13 +154,8 @@ const Home = () => {
                 <div key={event.id} className="block group relative">
                   {isClosed ? (
                     <div className="opacity-75 grayscale cursor-not-allowed relative">
-                        <EventCard 
-                          title={event.name}
-                          date={new Date(event.date + 'T12:00:00').toLocaleDateString('pt-BR')} 
-                          location={event.location}
-                          price="Encerrado" 
-                          image={getImageUrl(event.image_url)} 
-                        />
+                        {/* CORREÇÃO AQUI: Passando 'stage={event}' em vez de props soltas */}
+                        <EventCard stage={event} /> 
                         <div className="absolute inset-0 bg-black/60 flex items-center justify-center z-10 rounded-xl">
                             <span className="bg-red-600 text-white font-black uppercase px-6 py-3 -rotate-12 border-4 border-white shadow-2xl tracking-widest text-lg">
                                 Encerrado
@@ -188,13 +164,8 @@ const Home = () => {
                     </div>
                   ) : (
                     <Link to={`/event/${event.id}/register`}>
-                      <EventCard 
-                        title={event.name}
-                        date={new Date(event.date + 'T12:00:00').toLocaleDateString('pt-BR')} 
-                        location={event.location}
-                        price="Inscrições Abertas" 
-                        image={getImageUrl(event.image_url)} 
-                      />
+                      {/* CORREÇÃO AQUI: Passando 'stage={event}' */}
+                      <EventCard stage={event} />
                     </Link>
                   )}
                 </div>
@@ -318,7 +289,7 @@ const Home = () => {
 
       <Footer />
 
-      {/* --- BANNER DE INSTALAÇÃO PWA (Rodapé / Instruções iOS) --- */}
+      {/* --- BANNER DE INSTALAÇÃO PWA --- */}
       {showInstallBanner && !isStandalone && (
         <div className="fixed bottom-4 left-4 right-4 md:left-auto md:right-4 md:w-96 bg-white p-4 rounded-xl shadow-2xl border-l-4 border-orange-500 z-50 animate-fade-in-up text-black">
           <button 
@@ -336,14 +307,12 @@ const Home = () => {
               <h3 className="font-bold text-gray-800 text-sm">Instalar App Tamura</h3>
               
               {isIOS ? (
-                // Mensagem específica para iPhone
                 <p className="text-xs text-gray-600 mt-1">
                   Para instalar no iPhone: <br/>
                   1. Toque no botão <strong>Compartilhar</strong> <span className="inline-block align-middle"><Share size={12}/></span> abaixo.<br/>
                   2. Selecione <strong>"Adicionar à Tela de Início"</strong>.
                 </p>
               ) : (
-                // Botão para Android (no banner)
                 <div className="mt-2">
                   <p className="text-xs text-gray-600 mb-2">
                     Tenha acesso rápido aos eventos direto da sua tela inicial.
