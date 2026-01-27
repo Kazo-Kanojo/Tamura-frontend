@@ -3,8 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { 
   LogOut, Calendar, MapPin, Upload, Plus, Edit3, AlertCircle, CheckCircle, 
   ArrowLeft, Trash2, RefreshCw, X, ImageIcon, Search, Users, 
-  ClipboardList, DollarSign, Wallet, Tag, Save, FileText, Download, 
-  MessageCircle, List, Printer
+  ClipboardList, DollarSign, Wallet, Tag, Save, Printer, MessageCircle
 } from 'lucide-react';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
@@ -31,7 +30,7 @@ const AdminDashboard = () => {
     id: null, name: '', email: '', phone: '', bike_number: '', 
     chip_id: '', role: 'user', birth_date: '',
     rg: '', cpf: '', medical_insurance: '', team: '', emergency_phone: '', address: '',
-    modeloMoto: '' // <--- CAMPO DO MODELO DA MOTO
+    modeloMoto: ''
   });
 
   // --- ESTADOS DA PONTUAÇÃO ---
@@ -59,6 +58,18 @@ const AdminDashboard = () => {
   const [catSearch, setCatSearch] = useState('');
   const [editingCat, setEditingCat] = useState(null);
   const [newCatName, setNewCatName] = useState('');
+
+  // --- ESTADO PARA INSCRIÇÃO MANUAL (ATUALIZADO COM CPF E PHONE) ---
+  const [showManualRegModal, setShowManualRegModal] = useState(false);
+  const [manualRegForm, setManualRegForm] = useState({
+      pilot_name: '',
+      pilot_number: '',
+      modelo_moto: '',
+      cpf: '',     // <--- NOVO
+      phone: '',   // <--- NOVO
+      categories: [],
+      total_price: 0
+  });
 
   // --- HELPER: FORMATAR DATA PARA INPUT (YYYY-MM-DD) ---
   const formatDateForInput = (dateValue) => {
@@ -228,6 +239,45 @@ const AdminDashboard = () => {
     } catch (error) { showMessage("Erro conexão", "error"); } finally { setLoading(false); }
   };
 
+  const handleSaveManualRegistration = async (e) => {
+      e.preventDefault();
+      if (!selectedStageReg) return showMessage("Selecione uma etapa antes.", "error");
+      if (!manualRegForm.pilot_name) return showMessage("Nome do piloto é obrigatório.", "error");
+
+      setLoading(true);
+      try {
+          const res = await fetch(`${API_URL}/api/admin/registrations/manual`, {
+              method: 'POST',
+              headers: getAuthHeaders(),
+              body: JSON.stringify({
+                  stage_id: selectedStageReg.id,
+                  pilot_name: manualRegForm.pilot_name,
+                  pilot_number: manualRegForm.pilot_number,
+                  modelo_moto: manualRegForm.modelo_moto,
+                  cpf: manualRegForm.cpf,      // <--- ENVIA CPF
+                  phone: manualRegForm.phone,  // <--- ENVIA TELEFONE
+                  categories: manualRegForm.categories,
+                  total_price: manualRegForm.total_price
+              })
+          });
+
+          const data = await res.json();
+
+          if (res.ok) {
+              showMessage("Inscrição manual realizada!", "success");
+              setShowManualRegModal(false);
+              setManualRegForm({ pilot_name: '', pilot_number: '', modelo_moto: '', cpf: '', phone: '', categories: [], total_price: 0 });
+              fetchRegistrations(selectedStageReg.id);
+          } else {
+              showMessage(data.error || "Erro ao inscrever.", "error");
+          }
+      } catch (error) {
+          showMessage("Erro de conexão.", "error");
+      } finally {
+          setLoading(false);
+      }
+  };
+
   const handleDeleteStage = async (id) => {
     if (!window.confirm("Isso apagará todas as inscrições e resultados!")) return;
     setLoading(true);
@@ -286,7 +336,7 @@ const AdminDashboard = () => {
         team: user.team || '',
         emergency_phone: user.emergency_phone || '',
         address: user.address || '',
-        modeloMoto: user.modelo_moto || '' // <--- CARREGA O MODELO DA MOTO
+        modeloMoto: user.modelo_moto || '' 
     });
   };
 
@@ -444,7 +494,7 @@ const AdminDashboard = () => {
       }
   };
 
- // --- FUNÇÃO GERAR PDF (CORRIGIDA E ATUALIZADA) ---
+ // --- FUNÇÃO GERAR PDF ---
  const generateIndividualPDF = (reg) => {
   const doc = new jsPDF();
   
@@ -497,33 +547,29 @@ const AdminDashboard = () => {
   drawField("Emergência:", reg.emergency_phone, marginLeft + 85, 95);
   y += 10;
 
-  // Linha 5: Endereço (Linha Inteira)
+  // Linha 5: Endereço
   drawField("Endereço:", reg.address, marginLeft, contentWidth);
   y += 10;
 
-  // Linha 6: Equipe (AGORA COM LINHA EXCLUSIVA)
+  // Linha 6: Equipe
   drawField("Equipe:", reg.team, marginLeft, contentWidth);
-  y += 15; // Espaço extra antes do próximo bloco
+  y += 15;
 
   // --- BOX DE DADOS DA CORRIDA ---
   doc.setFillColor(245, 245, 245);
-  // Aumentei um pouco a altura fixa inicial do box para garantir (de 25 para 30 se quiser, ou manter 25)
   doc.rect(marginLeft, y - 5, contentWidth, 25, 'F');
   doc.rect(marginLeft, y - 5, contentWidth, 25, 'S');
 
   // Cálculos das Categorias
   const cats = reg.categories || "";
-  // Conta quantas categorias existem (separa por vírgula e remove espaços vazios)
   const catsCount = cats.split(',').filter(c => c.trim() !== '').length;
 
-  // Exibe o Título com a Quantidade
   doc.setFont("helvetica", "bold");
-  // AQUI ESTÁ A MUDANÇA: Adicionei (${catsCount})
   doc.text(`CATEGORIAS (${catsCount}):`, marginLeft + 2, y + 2);
 
   doc.setFont("helvetica", "normal");
-  const splitCats = doc.splitTextToSize(cats, contentWidth - 45); // Ajustei a largura para não bater no texto
-  doc.text(splitCats, marginLeft + 45, y + 2); // Ajustei a posição X para dar espaço ao "CATEGORIAS (X):"
+  const splitCats = doc.splitTextToSize(cats, contentWidth - 45);
+  doc.text(splitCats, marginLeft + 45, y + 2);
 
   const catHeight = splitCats.length * 5; 
   
@@ -535,7 +581,6 @@ const AdminDashboard = () => {
   doc.setFont("helvetica", "normal");
   doc.setFontSize(12);
   
-  // Concatena Modelo e Número
   const modelo = reg.modelo_moto || "_____";
   const numero = reg.pilot_number || "___";
   const textoMoto = `${modelo} - Nº ${numero}`;
@@ -988,19 +1033,127 @@ const AdminDashboard = () => {
                  </div>
              ) : (
                  <div>
-                    <div className="flex justify-between items-center mb-6">
-                        <button onClick={() => setSelectedStageReg(null)} className="text-sm text-gray-400 hover:text-white flex items-center gap-2"><ArrowLeft size={16}/> Voltar</button>
-                        <div className="relative">
+                    <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
+                        <div className="flex gap-2">
+                            <button onClick={() => setSelectedStageReg(null)} className="text-sm text-gray-400 hover:text-white flex items-center gap-2"><ArrowLeft size={16}/> Voltar</button>
+                            {/* BOTÃO NOVA INSCRIÇÃO MANUAL */}
+                            <button 
+                                onClick={() => setShowManualRegModal(true)} 
+                                className="bg-green-600 hover:bg-green-500 text-white px-4 py-2 rounded text-sm font-bold uppercase flex items-center gap-2 shadow-lg"
+                            >
+                                <Plus size={16} /> Inscrição Manual
+                            </button>
+                        </div>
+                        
+                        <div className="relative w-full md:w-auto">
                             <Search className="absolute left-3 top-2.5 text-gray-500" size={16} />
                             <input 
                                 type="text" 
                                 placeholder="Buscar Piloto..." 
-                                className="bg-neutral-900 border border-neutral-600 rounded-full py-2 pl-10 pr-4 text-sm text-white focus:border-green-500 outline-none w-64"
+                                className="bg-neutral-900 border border-neutral-600 rounded-full py-2 pl-10 pr-4 text-sm text-white focus:border-green-500 outline-none w-full md:w-64"
                                 value={regSearch}
                                 onChange={(e) => setRegSearch(e.target.value)}
                             />
                         </div>
                     </div>
+
+                    {/* --- MODAL DE INSCRIÇÃO MANUAL (ATUALIZADO) --- */}
+                    {showManualRegModal && (
+                        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+                            <div className="bg-neutral-800 border border-green-600 rounded-xl w-full max-w-2xl shadow-2xl animate-fade-in overflow-y-auto max-h-[90vh]">
+                                <div className="flex justify-between items-center p-6 border-b border-neutral-700 sticky top-0 bg-neutral-800 z-10">
+                                    <h3 className="text-xl font-bold text-white flex items-center gap-2"><Plus className="text-green-500"/> Nova Inscrição Avulsa</h3>
+                                    <button onClick={() => setShowManualRegModal(false)} className="text-gray-400 hover:text-white"><X size={24}/></button>
+                                </div>
+                                <form onSubmit={handleSaveManualRegistration} className="p-6 space-y-4">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div className="md:col-span-2">
+                                            <label className="text-xs text-gray-500 font-bold uppercase">Nome do Piloto</label>
+                                            <input className="w-full bg-neutral-900 border border-neutral-700 rounded p-3 text-white focus:border-green-500" 
+                                                value={manualRegForm.pilot_name} 
+                                                onChange={e => setManualRegForm({...manualRegForm, pilot_name: e.target.value})} 
+                                                placeholder="Nome Completo"
+                                                required
+                                            />
+                                        </div>
+                                        
+                                        {/* NOVOS CAMPOS: CPF E TELEFONE */}
+                                        <div>
+                                            <label className="text-xs text-gray-500 font-bold uppercase">CPF</label>
+                                            <input className="w-full bg-neutral-900 border border-neutral-700 rounded p-3 text-white focus:border-green-500" 
+                                                value={manualRegForm.cpf} 
+                                                onChange={e => setManualRegForm({...manualRegForm, cpf: e.target.value})} 
+                                                placeholder="000.000.000-00"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="text-xs text-gray-500 font-bold uppercase">Telefone</label>
+                                            <input className="w-full bg-neutral-900 border border-neutral-700 rounded p-3 text-white focus:border-green-500" 
+                                                value={manualRegForm.phone} 
+                                                onChange={e => setManualRegForm({...manualRegForm, phone: e.target.value})} 
+                                                placeholder="(00) 00000-0000"
+                                            />
+                                        </div>
+
+                                        <div>
+                                            <label className="text-xs text-gray-500 font-bold uppercase text-yellow-500">Número (#)</label>
+                                            <input className="w-full bg-neutral-900 border border-neutral-700 rounded p-3 text-yellow-500 font-bold focus:border-yellow-500" 
+                                                value={manualRegForm.pilot_number} 
+                                                onChange={e => setManualRegForm({...manualRegForm, pilot_number: e.target.value})} 
+                                                placeholder="Num"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="text-xs text-gray-500 font-bold uppercase">Modelo da Moto</label>
+                                            <input className="w-full bg-neutral-900 border border-neutral-700 rounded p-3 text-white focus:border-green-500" 
+                                                value={manualRegForm.modelo_moto} 
+                                                onChange={e => setManualRegForm({...manualRegForm, modelo_moto: e.target.value})} 
+                                                placeholder="Ex: CRF 250F"
+                                            />
+                                        </div>
+                                         <div className="md:col-span-2">
+                                            <label className="text-xs text-gray-500 font-bold uppercase text-green-500">Valor Cobrado (R$)</label>
+                                            <input type="number" className="w-full bg-neutral-900 border border-neutral-700 rounded p-3 text-green-500 font-bold focus:border-green-500" 
+                                                value={manualRegForm.total_price} 
+                                                onChange={e => setManualRegForm({...manualRegForm, total_price: parseFloat(e.target.value) || 0})} 
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <label className="text-xs text-gray-500 font-bold uppercase mb-2 block">Categorias</label>
+                                        <div className="grid grid-cols-2 md:grid-cols-3 gap-2 max-h-40 overflow-y-auto bg-neutral-900 p-3 rounded border border-neutral-700">
+                                            {categoriesList.map(cat => (
+                                                <label key={cat.id} className="flex items-center gap-2 text-sm text-gray-300 cursor-pointer hover:text-white">
+                                                    <input 
+                                                        type="checkbox" 
+                                                        className="accent-green-500 w-4 h-4"
+                                                        checked={manualRegForm.categories.includes(cat.name)}
+                                                        onChange={(e) => {
+                                                            const isChecked = e.target.checked;
+                                                            setManualRegForm(prev => {
+                                                                const newCats = isChecked 
+                                                                    ? [...prev.categories, cat.name]
+                                                                    : prev.categories.filter(c => c !== cat.name);
+                                                                return { ...prev, categories: newCats };
+                                                            });
+                                                        }}
+                                                    />
+                                                    {cat.name}
+                                                </label>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    <div className="pt-4 border-t border-neutral-700 flex justify-end gap-3 sticky bottom-0 bg-neutral-800 pb-2">
+                                        <button type="button" onClick={() => setShowManualRegModal(false)} className="px-4 py-2 rounded bg-neutral-700 text-white font-bold text-sm">Cancelar</button>
+                                        <button type="submit" className="px-6 py-2 rounded bg-green-600 hover:bg-green-500 text-white font-bold text-sm uppercase shadow-lg">Confirmar Inscrição</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    )}
+
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                         <div className="bg-neutral-800 p-6 rounded-xl border border-neutral-700 shadow-lg flex items-center justify-between"><div><p className="text-gray-500 text-xs font-bold uppercase">Total Inscritos</p><p className="text-3xl font-black text-white">{totalInscritos}</p></div><Users size={32} className="text-blue-500 opacity-50"/></div>
                         <div className="bg-neutral-800 p-6 rounded-xl border border-neutral-700 shadow-lg flex items-center justify-between"><div><p className="text-gray-500 text-xs font-bold uppercase">Receita Estimada</p><p className="text-3xl font-black text-white">R$ {totalReceita},00</p></div><DollarSign size={32} className="text-green-500 opacity-50"/></div>
@@ -1167,60 +1320,60 @@ const AdminDashboard = () => {
                                 <input className="w-full bg-neutral-900 border border-neutral-700 rounded p-2 text-white focus:border-yellow-500" value={userForm.phone} onChange={e => setUserForm({...userForm, phone: e.target.value})} />
                             </div>
 
-                {/* Dados Extras e Competição */}
-                <div className="lg:col-span-3 pb-2 border-b border-gray-800 mb-2 mt-4">
-                    <h4 className="text-xs font-bold text-gray-500 uppercase">Competição & Extras</h4>
-                </div>
+                            {/* Dados Extras e Competição */}
+                            <div className="lg:col-span-3 pb-2 border-b border-gray-800 mb-2 mt-4">
+                                <h4 className="text-xs font-bold text-gray-500 uppercase">Competição & Extras</h4>
+                            </div>
 
-                <div>
-                    <label className="block text-xs text-gray-500 uppercase font-bold mb-1 text-yellow-500">Nº Moto</label>
-                    <input className="w-full bg-neutral-900 border border-yellow-900/50 rounded p-2 text-yellow-500 font-bold" value={userForm.bike_number} onChange={e => setUserForm({...userForm, bike_number: e.target.value})} />
-                </div>
-                {/* --- AQUI ESTÁ O NOVO CAMPO: MODELO DA MOTO --- */}
-                <div>
-                    <label className="block text-xs text-gray-500 uppercase font-bold mb-1 text-yellow-500">Modelo da Moto</label>
-                    <input className="w-full bg-neutral-900 border border-yellow-900/50 rounded p-2 text-white" value={userForm.modeloMoto} onChange={e => setUserForm({...userForm, modeloMoto: e.target.value})} placeholder="Ex: CRF 250F, KTM..." />
-                </div>
-                <div>
-                    <label className="block text-xs text-gray-500 uppercase font-bold mb-1 text-blue-400">Chip ID</label>
-                    <div className="relative">
-                        <input className="w-full bg-blue-900/10 border border-blue-900/50 rounded p-2 text-blue-400 font-mono font-bold" value={userForm.chip_id} onChange={e => setUserForm({...userForm, chip_id: e.target.value})} />
+                            <div>
+                                <label className="block text-xs text-gray-500 uppercase font-bold mb-1 text-yellow-500">Nº Moto</label>
+                                <input className="w-full bg-neutral-900 border border-yellow-900/50 rounded p-2 text-yellow-500 font-bold" value={userForm.bike_number} onChange={e => setUserForm({...userForm, bike_number: e.target.value})} />
+                            </div>
+                            {/* --- AQUI ESTÁ O NOVO CAMPO: MODELO DA MOTO --- */}
+                            <div>
+                                <label className="block text-xs text-gray-500 uppercase font-bold mb-1 text-yellow-500">Modelo da Moto</label>
+                                <input className="w-full bg-neutral-900 border border-yellow-900/50 rounded p-2 text-white" value={userForm.modeloMoto} onChange={e => setUserForm({...userForm, modeloMoto: e.target.value})} placeholder="Ex: CRF 250F, KTM..." />
+                            </div>
+                            <div>
+                                <label className="block text-xs text-gray-500 uppercase font-bold mb-1 text-blue-400">Chip ID</label>
+                                <div className="relative">
+                                    <input className="w-full bg-blue-900/10 border border-blue-900/50 rounded p-2 text-blue-400 font-mono font-bold" value={userForm.chip_id} onChange={e => setUserForm({...userForm, chip_id: e.target.value})} />
+                                </div>
+                            </div>
+                            <div>
+                                <label className="block text-xs text-gray-500 uppercase font-bold mb-1">Equipe</label>
+                                <input className="w-full bg-neutral-900 border border-neutral-700 rounded p-2 text-white focus:border-yellow-500" value={userForm.team} onChange={e => setUserForm({...userForm, team: e.target.value})} />
+                            </div>
+                            <div>
+                                <label className="block text-xs text-gray-500 uppercase font-bold mb-1">Convênio Médico</label>
+                                <input className="w-full bg-neutral-900 border border-neutral-700 rounded p-2 text-white focus:border-yellow-500" value={userForm.medical_insurance} onChange={e => setUserForm({...userForm, medical_insurance: e.target.value})} />
+                            </div>
+                            <div>
+                                <label className="block text-xs text-gray-500 uppercase font-bold mb-1">Tel. Emergência</label>
+                                <input className="w-full bg-neutral-900 border border-neutral-700 rounded p-2 text-white focus:border-yellow-500" value={userForm.emergency_phone} onChange={e => setUserForm({...userForm, emergency_phone: e.target.value})} />
+                            </div>
+                            <div>
+                                <label className="block text-xs text-gray-500 uppercase font-bold mb-1">Função (Role)</label>
+                                <select className="w-full bg-neutral-900 border border-neutral-700 rounded p-2 text-white focus:border-yellow-500" value={userForm.role} onChange={e => setUserForm({...userForm, role: e.target.value})}>
+                                    <option value="user">Piloto</option>
+                                    <option value="admin">Administrador</option>
+                                </select>
+                            </div>
+                            <div className="lg:col-span-3">
+                                <label className="block text-xs text-gray-500 uppercase font-bold mb-1">Endereço Completo</label>
+                                <input className="w-full bg-neutral-900 border border-neutral-700 rounded p-2 text-white focus:border-yellow-500" value={userForm.address} onChange={e => setUserForm({...userForm, address: e.target.value})} placeholder="Rua, Número, Bairro, Cidade - UF" />
+                            </div>
+
+                            <div className="md:col-span-2 lg:col-span-3 flex justify-end gap-3 mt-6 pt-4 border-t border-gray-800 bg-[#111] sticky bottom-0">
+                                <button type="button" onClick={handleCancelEditUser} className="px-6 py-2 rounded bg-neutral-700 hover:bg-neutral-600 text-white font-bold text-sm transition">Cancelar</button>
+                                <button type="submit" className="px-8 py-2 rounded bg-green-600 hover:bg-green-700 text-white font-bold text-sm uppercase flex items-center gap-2 shadow-lg hover:shadow-green-900/20 transition">
+                                    <CheckCircle size={18} /> Salvar Alterações
+                                </button>
+                            </div>
+                        </form>
                     </div>
                 </div>
-                <div>
-                    <label className="block text-xs text-gray-500 uppercase font-bold mb-1">Equipe</label>
-                    <input className="w-full bg-neutral-900 border border-neutral-700 rounded p-2 text-white focus:border-yellow-500" value={userForm.team} onChange={e => setUserForm({...userForm, team: e.target.value})} />
-                </div>
-                <div>
-                    <label className="block text-xs text-gray-500 uppercase font-bold mb-1">Convênio Médico</label>
-                    <input className="w-full bg-neutral-900 border border-neutral-700 rounded p-2 text-white focus:border-yellow-500" value={userForm.medical_insurance} onChange={e => setUserForm({...userForm, medical_insurance: e.target.value})} />
-                </div>
-                <div>
-                    <label className="block text-xs text-gray-500 uppercase font-bold mb-1">Tel. Emergência</label>
-                    <input className="w-full bg-neutral-900 border border-neutral-700 rounded p-2 text-white focus:border-yellow-500" value={userForm.emergency_phone} onChange={e => setUserForm({...userForm, emergency_phone: e.target.value})} />
-                </div>
-                <div>
-                    <label className="block text-xs text-gray-500 uppercase font-bold mb-1">Função (Role)</label>
-                    <select className="w-full bg-neutral-900 border border-neutral-700 rounded p-2 text-white focus:border-yellow-500" value={userForm.role} onChange={e => setUserForm({...userForm, role: e.target.value})}>
-                        <option value="user">Piloto</option>
-                        <option value="admin">Administrador</option>
-                    </select>
-                </div>
-                <div className="lg:col-span-3">
-                    <label className="block text-xs text-gray-500 uppercase font-bold mb-1">Endereço Completo</label>
-                    <input className="w-full bg-neutral-900 border border-neutral-700 rounded p-2 text-white focus:border-yellow-500" value={userForm.address} onChange={e => setUserForm({...userForm, address: e.target.value})} placeholder="Rua, Número, Bairro, Cidade - UF" />
-                </div>
-
-                <div className="md:col-span-2 lg:col-span-3 flex justify-end gap-3 mt-6 pt-4 border-t border-gray-800 bg-[#111] sticky bottom-0">
-                    <button type="button" onClick={handleCancelEditUser} className="px-6 py-2 rounded bg-neutral-700 hover:bg-neutral-600 text-white font-bold text-sm transition">Cancelar</button>
-                    <button type="submit" className="px-8 py-2 rounded bg-green-600 hover:bg-green-700 text-white font-bold text-sm uppercase flex items-center gap-2 shadow-lg hover:shadow-green-900/20 transition">
-                        <CheckCircle size={18} /> Salvar Alterações
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-)}
+             )}
              <div className="bg-neutral-800 rounded-xl border border-neutral-700 overflow-hidden shadow-2xl">
                 <div className="p-6 border-b border-neutral-700 bg-neutral-900 flex justify-between items-center">
                    <h2 className="text-2xl font-black italic uppercase text-white flex items-center gap-2"><Users className="text-blue-500" /> Gestão de Pilotos</h2>
