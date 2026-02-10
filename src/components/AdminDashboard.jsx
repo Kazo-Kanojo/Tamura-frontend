@@ -1,18 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom'; 
+import { useNavigate } from 'react-router-dom';
 import { 
   LogOut, Calendar, MapPin, Upload, Plus, Edit3, AlertCircle, CheckCircle, 
   ArrowLeft, Trash2, RefreshCw, X, ImageIcon, Search, Users, 
   ClipboardList, DollarSign, Wallet, Tag, Save, Printer, MessageCircle
 } from 'lucide-react';
-import jsPDF from 'jspdf';
-import 'jspdf-autotable';
-import API_URL from '../api';
+import html2pdf from 'html2pdf.js';
+import RegistrationForm from './RegistrationForm';
+// Ajuste para pegar a URL string correta, e não a instância do Axios
+import api from '../api'; 
 
 const AdminDashboard = () => {
-  const navigate = useNavigate(); 
-  const [activeTab, setActiveTab] = useState('events'); 
-  
+  const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState('events');
+
   // --- ESTADOS GERAIS ---
   const [stages, setStages] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -24,8 +25,8 @@ const AdminDashboard = () => {
 
   // --- ESTADOS DE USUÁRIOS ---
   const [usersList, setUsersList] = useState([]);
-  const [userSearch, setUserSearch] = useState(''); 
-  const [editingUser, setEditingUser] = useState(null); 
+  const [userSearch, setUserSearch] = useState('');
+  const [editingUser, setEditingUser] = useState(null);
   const [userForm, setUserForm] = useState({ 
     id: null, name: '', email: '', phone: '', bike_number: '', 
     chip_id: '', role: 'user', birth_date: '',
@@ -36,22 +37,25 @@ const AdminDashboard = () => {
   // --- ESTADOS DA PONTUAÇÃO ---
   const [selectedStage, setSelectedStage] = useState(null);
   const [selectedCategory, setSelectedCategory] = useState(null);
-  const [uploadedCategories, setUploadedCategories] = useState([]); 
-  const [categoryResults, setCategoryResults] = useState([]); 
-  const [isReplacing, setIsReplacing] = useState(false); 
+  const [uploadedCategories, setUploadedCategories] = useState([]);
+  const [categoryResults, setCategoryResults] = useState([]);
+  const [isReplacing, setIsReplacing] = useState(false);
 
   // --- ESTADOS DE INSCRIÇÕES ---
-  const [selectedStageReg, setSelectedStageReg] = useState(null); 
-  const [registrationsList, setRegistrationsList] = useState([]); 
-  const [regSearch, setRegSearch] = useState(''); 
+  const [selectedStageReg, setSelectedStageReg] = useState(null);
+  const [registrationsList, setRegistrationsList] = useState([]);
+  const [regSearch, setRegSearch] = useState('');
   const [editingRegistration, setEditingRegistration] = useState(null);
   const [regForm, setRegForm] = useState({ id: null, pilot_name: '', pilot_number: '', categories: '', total_price: '' });
+  
+  // Estado exclusivo para geração da Ficha
+  const [pdfData, setPdfData] = useState(null);
 
   // --- ESTADOS DE PLANOS E CONFIGURAÇÕES ---
-  const [selectedStagePlan, setSelectedStagePlan] = useState(null); 
-  const [localPlans, setLocalPlans] = useState([]); 
-  const [batchName, setBatchName] = useState(''); 
-  const [pixKey, setPixKey] = useState(''); 
+  const [selectedStagePlan, setSelectedStagePlan] = useState(null);
+  const [localPlans, setLocalPlans] = useState([]);
+  const [batchName, setBatchName] = useState('');
+  const [pixKey, setPixKey] = useState('');
 
   // --- ESTADOS DE CATEGORIAS ---
   const [categoriesList, setCategoriesList] = useState([]);
@@ -59,14 +63,14 @@ const AdminDashboard = () => {
   const [editingCat, setEditingCat] = useState(null);
   const [newCatName, setNewCatName] = useState('');
 
-  // --- ESTADO PARA INSCRIÇÃO MANUAL (ATUALIZADO COM CPF E PHONE) ---
+  // --- ESTADO PARA INSCRIÇÃO MANUAL ---
   const [showManualRegModal, setShowManualRegModal] = useState(false);
   const [manualRegForm, setManualRegForm] = useState({
       pilot_name: '',
       pilot_number: '',
       modelo_moto: '',
-      cpf: '',     // <--- NOVO
-      phone: '',   // <--- NOVO
+      cpf: '',
+      phone: '',
       categories: [],
       total_price: 0
   });
@@ -145,14 +149,14 @@ const AdminDashboard = () => {
 
   const fetchStages = async () => {
     try {
-      const response = await fetch(`${API_URL}/api/stages`);
+      const response = await fetch(`${api}/api/stages`);
       setStages(await response.json());
     } catch (error) { console.error(error); }
   };
 
   const fetchCategories = async () => {
       try {
-          const res = await fetch(`${API_URL}/api/categories`);
+          const res = await fetch(`${api}/api/categories`);
           if (res.ok) setCategoriesList(await res.json());
       } catch (error) { console.error(error); }
   };
@@ -164,8 +168,8 @@ const AdminDashboard = () => {
       setLoading(true);
       try {
           const url = editingCat 
-            ? `${API_URL}/api/categories/${editingCat.id}` 
-            : `${API_URL}/api/categories`;
+            ? `${api}/api/categories/${editingCat.id}` 
+            : `${api}/api/categories`;
           
           const method = editingCat ? 'PUT' : 'POST';
 
@@ -190,7 +194,7 @@ const AdminDashboard = () => {
   const handleDeleteCategory = async (id) => {
       if (!window.confirm("Tem certeza? Isso não removerá inscrições antigas, mas removerá a opção para novas.")) return;
       try {
-          const res = await fetch(`${API_URL}/api/categories/${id}`, {
+          const res = await fetch(`${api}/api/categories/${id}`, {
               method: 'DELETE',
               headers: getAuthHeaders()
           });
@@ -223,7 +227,7 @@ const AdminDashboard = () => {
     if (imageFile) dataToSend.append('image', imageFile);
 
     try {
-      let url = formData.id ? `${API_URL}/api/stages/${formData.id}` : `${API_URL}/api/stages`;
+      let url = formData.id ? `${api}/api/stages/${formData.id}` : `${api}/api/stages`;
       let method = formData.id ? 'PUT' : 'POST';
       
       const res = await fetch(url, { 
@@ -247,7 +251,7 @@ const AdminDashboard = () => {
 
       setLoading(true);
       try {
-          const res = await fetch(`${API_URL}/api/admin/registrations/manual`, {
+          const res = await fetch(`${api}/api/admin/registrations/manual`, {
               method: 'POST',
               headers: getAuthHeaders(),
               body: JSON.stringify({
@@ -255,8 +259,8 @@ const AdminDashboard = () => {
                   pilot_name: manualRegForm.pilot_name,
                   pilot_number: manualRegForm.pilot_number,
                   modelo_moto: manualRegForm.modelo_moto,
-                  cpf: manualRegForm.cpf,      // <--- ENVIA CPF
-                  phone: manualRegForm.phone,  // <--- ENVIA TELEFONE
+                  cpf: manualRegForm.cpf,
+                  phone: manualRegForm.phone,
                   categories: manualRegForm.categories,
                   total_price: manualRegForm.total_price
               })
@@ -283,7 +287,7 @@ const AdminDashboard = () => {
     if (!window.confirm("Isso apagará todas as inscrições e resultados!")) return;
     setLoading(true);
     try {
-        const res = await fetch(`${API_URL}/api/stages/${id}`, { 
+        const res = await fetch(`${api}/api/stages/${id}`, { 
             method: 'DELETE',
             headers: getAuthHeaders()
         });
@@ -298,7 +302,7 @@ const AdminDashboard = () => {
         location: stage.location, 
         date: stage.date,
         end_date: stage.end_date || '',
-        map_link: stage.map_link || '' // <--- Carrega o link
+        map_link: stage.map_link || ''
     });
     setImageFile(null);
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -313,7 +317,7 @@ const AdminDashboard = () => {
   const fetchUsers = async () => {
     setLoading(true);
     try {
-        const res = await fetch(`${API_URL}/api/users`, {
+        const res = await fetch(`${api}/api/users`, {
             headers: getAuthHeaders()
         });
         if(res.ok) setUsersList(await res.json());
@@ -351,7 +355,7 @@ const AdminDashboard = () => {
       e.preventDefault(); 
       setLoading(true);
       try {
-          const res = await fetch(`${API_URL}/api/users/${userForm.id}`, { 
+          const res = await fetch(`${api}/api/users/${userForm.id}`, { 
               method: 'PUT', 
               headers: getAuthHeaders(), 
               body: JSON.stringify(userForm)
@@ -373,11 +377,11 @@ const AdminDashboard = () => {
       }
   };
 
-const handleDeleteUser = async (id) => {
+  const handleDeleteUser = async (id) => {
       if(!window.confirm("Tem certeza que deseja remover este piloto? Todas as inscrições dele também serão apagadas.")) return;
       
       try { 
-          const res = await fetch(`${API_URL}/api/users/${id}`, { 
+          const res = await fetch(`${api}/api/users/${id}`, { 
               method: 'DELETE',
               headers: getAuthHeaders()
           }); 
@@ -396,11 +400,11 @@ const handleDeleteUser = async (id) => {
   };
 
   // --- PONTUAÇÃO ---
-  const fetchCategoryStatus = async (stageId) => { try { const r = await fetch(`${API_URL}/api/stages/${stageId}/categories-status`); setUploadedCategories(await r.json()); } catch (e) {} };
+  const fetchCategoryStatus = async (stageId) => { try { const r = await fetch(`${api}/api/stages/${stageId}/categories-status`); setUploadedCategories(await r.json()); } catch (e) {} };
   const fetchCategoryResults = async (stageId, category) => { 
       setLoading(true); 
       try { 
-          const r = await fetch(`${API_URL}/api/stages/${stageId}/results/${encodeURIComponent(category)}`); 
+          const r = await fetch(`${api}/api/stages/${stageId}/results/${encodeURIComponent(category)}`); 
           const d = await r.json(); 
           setCategoryResults(d); 
           setIsReplacing(d.length === 0); 
@@ -410,7 +414,7 @@ const handleDeleteUser = async (id) => {
     const file = event.target.files[0]; if (!file) return;
     const uploadData = new FormData(); uploadData.append('file', file); setLoading(true);
     try {
-      const res = await fetch(`${API_URL}/api/stages/${selectedStage.id}/upload/${encodeURIComponent(selectedCategory)}`, { 
+      const res = await fetch(`${api}/api/stages/${selectedStage.id}/upload/${encodeURIComponent(selectedCategory)}`, { 
           method: 'POST', 
           headers: getAuthHeaders(false),
           body: uploadData 
@@ -424,7 +428,7 @@ const handleDeleteUser = async (id) => {
   const fetchRegistrations = async (stageId) => {
       setLoading(true);
       try {
-          const res = await fetch(`${API_URL}/api/registrations/stage/${stageId}`, {
+          const res = await fetch(`${api}/api/registrations/stage/${stageId}`, {
               headers: getAuthHeaders()
           });
           setRegistrationsList(await res.json());
@@ -434,7 +438,7 @@ const handleDeleteUser = async (id) => {
   const togglePaymentStatus = async (reg) => {
       const newStatus = reg.status === 'paid' ? 'pending' : 'paid';
       try {
-          const res = await fetch(`${API_URL}/api/registrations/${reg.id}/status`, {
+          const res = await fetch(`${api}/api/registrations/${reg.id}/status`, {
               method: 'PUT', 
               headers: getAuthHeaders(), 
               body: JSON.stringify({ status: newStatus })
@@ -444,6 +448,68 @@ const handleDeleteUser = async (id) => {
               showMessage(newStatus === 'paid' ? "Pagamento Confirmado!" : "Status alterado para Pendente", "success");
           }
       } catch (error) { showMessage("Erro ao atualizar status", "error"); }
+  };
+
+  // --- NOVA FUNÇÃO DE GERAR PDF (IGUAL À FICHA FÍSICA) ---
+  const handleGeneratePDF = (reg) => {
+    // 1. Mapeia dados do DB para o formato da ficha visual
+    const formattedData = {
+      chipNumber: reg.chip_id ? String(reg.chip_id) : '',
+      equipe: reg.team || '',
+      dataNascimento: reg.birth_date ? new Date(reg.birth_date).toLocaleDateString('pt-BR') : '',
+      apelido: reg.nickname || '',
+      nomeCompleto: reg.pilot_name || '',
+      rg: reg.rg || '',
+      cpf: reg.cpf || '',
+      convenioMedico: reg.medical_plan || '',
+      endereco: reg.address || '',
+      tel: reg.phone || '',
+      telUrgencia: reg.emergency_phone || '',
+      totalCategorias: reg.categories ? reg.categories.split(',').filter(Boolean).length : 0,
+      
+      // Cria a linha de inscrição com os dados da moto
+      inscricoes: [
+        { 
+          id: 1, 
+          // Categorias vem como string "MX1, MX2", aqui mantemos vazio pois não temos mapeamento numérico na DB
+          // O usuário pode marcar a caneta ou você pode implementar lógica futura
+          categorias: [], 
+          moto: reg.modelo_moto || '', 
+          numero: reg.pilot_number || '' 
+        },
+        // Linha extra vazia
+        { id: 2, categorias: [], moto: '', numero: '' }
+      ],
+      localData: `São Paulo-SP, ${new Date().toLocaleDateString('pt-BR')}`,
+      termoAceito: true
+    };
+
+    setPdfData(formattedData);
+
+    // 2. Renderiza e Gera PDF
+    setTimeout(() => {
+      const element = document.getElementById('print-section');
+      if (!element) {
+          console.error("Elemento de impressão não encontrado");
+          setPdfData(null);
+          return;
+      }
+
+      const opt = {
+        margin:       0,
+        filename:     `Ficha_${reg.pilot_name.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.pdf`,
+        image:        { type: 'jpeg', quality: 0.98 },
+        html2canvas:  { scale: 2, logging: false, useCORS: true }, // useCORS é vital para imagens
+        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+      };
+
+      html2pdf().set(opt).from(element).save().then(() => {
+        setPdfData(null);
+      }).catch(err => {
+          console.error(err);
+          setPdfData(null);
+      });
+    }, 500); 
   };
 
   const handleEditRegistrationClick = (reg) => {
@@ -466,7 +532,7 @@ const handleDeleteUser = async (id) => {
       e.preventDefault();
       setLoading(true);
       try {
-          const res = await fetch(`${API_URL}/api/registrations/${regForm.id}`, {
+          const res = await fetch(`${api}/api/registrations/${regForm.id}`, {
               method: 'PUT',
               headers: getAuthHeaders(),
               body: JSON.stringify(regForm)
@@ -489,7 +555,7 @@ const handleDeleteUser = async (id) => {
       if (!window.confirm("ATENÇÃO: Tem certeza que deseja cancelar esta inscrição? Isso é irreversível e removerá o piloto da lista.")) return;
       setLoading(true);
       try {
-          const res = await fetch(`${API_URL}/api/registrations/${id}`, {
+          const res = await fetch(`${api}/api/registrations/${id}`, {
               method: 'DELETE',
               headers: getAuthHeaders()
           });
@@ -507,157 +573,6 @@ const handleDeleteUser = async (id) => {
       }
   };
 
- // --- FUNÇÃO GERAR PDF ---
- const generateIndividualPDF = (reg) => {
-  const doc = new jsPDF();
-  
-  const marginLeft = 15;
-  const pageWidth = 210;
-  const contentWidth = pageWidth - marginLeft - 15;
-  let y = 20;
-
-  // --- CABEÇALHO ---
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(16);
-  doc.text("FICHA DE INSCRIÇÃO", pageWidth / 2, y, { align: "center" });
-  y += 15;
-
-  const drawField = (label, value, xPos, width, isBoldValue = false) => {
-      doc.setFontSize(10);
-      doc.setFont("helvetica", "bold");
-      doc.text(label, xPos, y);
-      const labelWidth = doc.getTextWidth(label) + 2;
-      const valueSafe = value ? String(value).toUpperCase() : "";
-      doc.setFont("helvetica", isBoldValue ? "bold" : "normal");
-      doc.text(valueSafe, xPos + labelWidth, y);
-      doc.setLineWidth(0.1);
-      doc.line(xPos + labelWidth, y + 1, xPos + width, y + 1);
-  };
-
-  // --- DADOS DO PILOTO ---
-  // Linha 1: Piloto
-  drawField("Piloto:", reg.pilot_name, marginLeft, contentWidth, true);
-  y += 10;
-
-  // Linha 2: Nascimento e RG
-  let dataNasc = "";
-  if (reg.birth_date) {
-      const dateObj = new Date(reg.birth_date);
-      dateObj.setMinutes(dateObj.getMinutes() + dateObj.getTimezoneOffset());
-      dataNasc = dateObj.toLocaleDateString('pt-BR');
-  }
-  drawField("Dt. Nasc.:", dataNasc, marginLeft, 80);
-  drawField("RG:", reg.rg, marginLeft + 85, 95);
-  y += 10;
-
-  // Linha 3: CPF e Convênio
-  drawField("CPF:", reg.cpf, marginLeft, 80);
-  drawField("Convênio:", reg.medical_insurance, marginLeft + 85, 95);
-  y += 10;
-
-  // Linha 4: Contatos
-  drawField("Tel:", reg.phone, marginLeft, 80);
-  drawField("Emergência:", reg.emergency_phone, marginLeft + 85, 95);
-  y += 10;
-
-  // Linha 5: Endereço
-  drawField("Endereço:", reg.address, marginLeft, contentWidth);
-  y += 10;
-
-  // Linha 6: Equipe
-  drawField("Equipe:", reg.team, marginLeft, contentWidth);
-  y += 15;
-
-  // --- BOX DE DADOS DA CORRIDA ---
-  doc.setFillColor(245, 245, 245);
-  doc.rect(marginLeft, y - 5, contentWidth, 25, 'F');
-  doc.rect(marginLeft, y - 5, contentWidth, 25, 'S');
-
-  // Cálculos das Categorias
-  const cats = reg.categories || "";
-  const catsCount = cats.split(',').filter(c => c.trim() !== '').length;
-
-  doc.setFont("helvetica", "bold");
-  doc.text(`CATEGORIAS (${catsCount}):`, marginLeft + 2, y + 2);
-
-  doc.setFont("helvetica", "normal");
-  const splitCats = doc.splitTextToSize(cats, contentWidth - 45);
-  doc.text(splitCats, marginLeft + 45, y + 2);
-
-  const catHeight = splitCats.length * 5; 
-  
-  // SOLUÇÃO: Modelo da Moto + Numeral
-  const yMoto = y + 5 + catHeight;
-  doc.setFont("helvetica", "bold");
-  doc.text("MOTO:", marginLeft + 2, yMoto);
-  
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(12);
-  
-  const modelo = reg.modelo_moto || "_____";
-  const numero = reg.pilot_number || "___";
-  const textoMoto = `${modelo} - Nº ${numero}`;
-  
-  doc.text(textoMoto.toUpperCase(), marginLeft + 20, yMoto);
-
-  if(reg.chip_id) {
-      doc.setFontSize(10);
-      doc.setFont("helvetica", "bold");
-      doc.text(`CHIP ID: ${reg.chip_id}`, marginLeft + 140, yMoto);
-  }
-
-  y += 25 + catHeight; 
-
-  // --- TERMO DE RESPONSABILIDADE ---
-  doc.setFontSize(11);
-  doc.setFont("helvetica", "bold");
-  doc.text("Termo de Responsabilidade", pageWidth / 2, y, { align: "center" });
-  y += 6;
-  
-  doc.setFont("times", "normal");
-  doc.setFontSize(9);
-  
-  const termoTexto = "Declaro para os devidos fins, que estou participando deste evento por minha livre e espontânea vontade e estou ciente que o Velocross, trata-se de uma atividade esportiva motorizada e sou conhecedor de todos os riscos envolvidos no motociclismo off Road. Declaro também que me encontro fisicamente, clinicamente apto a participar e não fiz uso de bebida alcoolica ou drogas. Concordo em observar e acatar qualquer decisão oficial dos organizadores do evento relativa a possibilidade de não terminá-lo NO TEMPO HABITUAL, por conta de chuvas, acidentes, etc. Assumo ainda todos os riscos competir na CORRIDAS E CAMPEONATOS DE VELOCROSS, isentando os seus organizadores bem como seus patrocinadores, apoiadores, Prefeitura Municipal, de quaisquer acidentes que eu venha a me envolver, durante as competições, contatos com outros participantes, efeito do clima, incluindo aqui alto calor e suas consequências, condições de tráfego e do circuito além de outras consequências que possam ter origem em minha falta de condicionamento físico para participar do mencionado evento de parte das entidades/ pessoas aqui nominadas. Estou ciente que qualquer atendimento médico que for necessário ocasionado por acidente na competição será direcionado a rede publica de atendimento médico, “SUS”. Concedo ainda permissão aos organizadores do evento e a seus patrocinadores, a utilizarem fotografias, filmagens ou qualquer outra forma que mostre minha participação NAS CORRIDAS E CAMPEONATOS DE VELOCROSS, bem como utilizar das imagens para divulgação, prospecção, apresentação e outras finalidades da organização.";
-  
-  const termoLines = doc.splitTextToSize(termoTexto, contentWidth);
-  doc.text(termoLines, marginLeft, y);
-
-  y += (termoLines.length * 3.5) + 5; 
-
-  // --- AVISOS ---
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(10);
-  doc.setTextColor(180, 0, 0); 
-  doc.text("IMPORTANTE:", marginLeft, y);
-  y += 5;
-  
-  doc.setFont("helvetica", "normal");
-  doc.setTextColor(0, 0, 0);
-  doc.setFontSize(8);
-
-  const aviso1 = "Não será devolvido os valores pagos referente as inscrições em HIPOTESE alguma, bem como não será possível transferi-las para etapas futuras. É PROIBIDO a transferência de inscrições do piloto para outro piloto.";
-  const avisoLines1 = doc.splitTextToSize(aviso1, contentWidth);
-  doc.text(avisoLines1, marginLeft, y);
-  
-  y += (avisoLines1.length * 3.5) + 2;
-
-  const aviso2 = "Caso não seja possível terminar a etapa devido as condições climáticas, condições da pista, quebra de horário, NÃO HAVERÁ compensação ou devolução de valores pagos, as categorias não realizadas, terão pontuação dobrada na próxima etapa.";
-  const avisoLines2 = doc.splitTextToSize(aviso2, contentWidth);
-  doc.text(avisoLines2, marginLeft, y);
-
-  // --- ASSINATURA ---
-  if (y > 250) { doc.addPage(); y = 40; } else { y = 270; }
-
-  const hoje = new Date().toLocaleDateString('pt-BR');
-  doc.setFontSize(10);
-  doc.text(`São Paulo-SP, ${hoje}`, marginLeft, y - 15);
-  doc.line(marginLeft + 70, y - 5, contentWidth, y - 5);
-  doc.text("Assinatura do Piloto ou Responsável", marginLeft + 100, y);
-
-  const cleanName = reg.pilot_name ? reg.pilot_name.replace(/[^a-zA-Z0-9]/g, '_') : 'ficha';
-  doc.save(`Ficha_${cleanName}.pdf`);
-};
-
   const totalInscritos = registrationsList.length;
   const totalReceita = registrationsList.reduce((acc, curr) => acc + (curr.total_price || 0), 0);
   const totalPendente = registrationsList.filter(r => r.status === 'pending').reduce((acc, curr) => acc + (curr.total_price || 0), 0);
@@ -665,7 +580,7 @@ const handleDeleteUser = async (id) => {
   // --- PLANOS E LOTES POR ETAPA ---
   const fetchGlobalSettings = async () => {
       try { 
-          const res = await fetch(`${API_URL}/api/settings/pix_key`); 
+          const res = await fetch(`${api}/api/settings/pix_key`); 
           const data = await res.json(); 
           setPixKey(data.value || '');
       } catch(e) { console.error(e); }
@@ -674,7 +589,7 @@ const handleDeleteUser = async (id) => {
   const fetchStagePrices = async (stageId) => {
       setLoading(true);
       try {
-          const res = await fetch(`${API_URL}/api/stages/${stageId}/prices`);
+          const res = await fetch(`${api}/api/stages/${stageId}/prices`);
           const data = await res.json();
           setBatchName(data.batch_name); 
           setLocalPlans(data.plans);     
@@ -696,7 +611,7 @@ const handleDeleteUser = async (id) => {
       
       setLoading(true);
       try {
-          await fetch(`${API_URL}/api/stages/${selectedStagePlan}/prices`, {
+          await fetch(`${api}/api/stages/${selectedStagePlan}/prices`, {
               method: 'PUT',
               headers: getAuthHeaders(),
               body: JSON.stringify({ 
@@ -705,7 +620,7 @@ const handleDeleteUser = async (id) => {
               })
           });
 
-          await fetch(`${API_URL}/api/settings/pix_key`, {
+          await fetch(`${api}/api/settings/pix_key`, {
               method: 'PUT', 
               headers: getAuthHeaders(), 
               body: JSON.stringify({ value: pixKey })
@@ -802,7 +717,7 @@ const handleDeleteUser = async (id) => {
                         <div className="h-12 w-12 rounded bg-neutral-800 overflow-hidden flex-shrink-0 border border-neutral-700">
                              {stage.image_url ? (
                                 <img 
-                                    src={stage.image_url.startsWith('http') ? stage.image_url : `${API_URL}${stage.image_url}`} 
+                                    src={stage.image_url.startsWith('http') ? stage.image_url : `${api}${stage.image_url}`} 
                                     className="w-full h-full object-cover"
                                 />
                              ) : (
@@ -829,8 +744,8 @@ const handleDeleteUser = async (id) => {
         {/* --- ABA CATEGORIAS --- */}
         {activeTab === 'categories' && (
           <div className="animate-fade-in grid grid-cols-1 md:grid-cols-3 gap-8">
-             {/* FORMULÁRIO */}
-             <div className="bg-neutral-800 p-6 rounded-xl border border-neutral-700 h-min sticky top-24">
+              {/* FORMULÁRIO */}
+              <div className="bg-neutral-800 p-6 rounded-xl border border-neutral-700 h-min sticky top-24">
                 <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
                     {editingCat ? ( <><Edit3 className="text-yellow-500"/> Editar Categoria</> ) : ( <><Plus className="text-green-500"/> Nova Categoria</> )}
                 </h2>
@@ -1215,7 +1130,7 @@ const handleDeleteUser = async (id) => {
                                                 <td className="p-4 text-center"><button onClick={() => togglePaymentStatus(reg)} className={`px-3 py-1 rounded-full text-xs font-bold uppercase transition border ${reg.status === 'paid' ? 'bg-green-900/20 text-green-500 border-green-900/50 hover:bg-green-900/40' : 'bg-yellow-900/20 text-yellow-500 border-yellow-900/50 hover:bg-yellow-900/40'}`}>{reg.status === 'paid' ? 'Pago' : 'Pendente'}</button></td>
                                                 
                                                 <td className="p-4 text-right flex justify-end gap-2">
-                                                    <button onClick={() => generateIndividualPDF(reg)} className="p-2 rounded text-gray-400 hover:text-blue-500 hover:bg-blue-500/10"  title="Imprimir Ficha de Inscrição">
+                                                    <button onClick={() => handleGeneratePDF(reg)} className="p-2 rounded text-gray-400 hover:text-blue-500 hover:bg-blue-500/10"  title="Gerar PDF Nova Ficha">
                                                             <Printer size={16}/>
                                                     </button>
                                                     <button onClick={() => handleEditRegistrationClick(reg)} className="p-2 rounded text-gray-400 hover:text-yellow-400 hover:bg-yellow-400/10" title="Editar Inscrição">
@@ -1256,7 +1171,7 @@ const handleDeleteUser = async (id) => {
                             <label className="text-xs text-green-500 font-bold uppercase flex items-center gap-2 mb-2"><DollarSign size={14}/> Chave PIX (Global)</label>
                             <div className="flex gap-2">
                                 <input className="w-full max-w-md bg-neutral-900 border border-green-600/50 rounded p-3 text-white font-mono outline-none focus:border-green-500" placeholder="Email, CPF ou Telefone" value={pixKey} onChange={(e) => setPixKey(e.target.value)} />
-                                <button onClick={() => fetch(`${API_URL}/api/settings/pix_key`, { method: 'PUT', headers: getAuthHeaders(), body: JSON.stringify({ value: pixKey }) }).then(() => showMessage("PIX Salvo!", "success"))} className="bg-green-700 hover:bg-green-600 text-white px-4 rounded font-bold transition">Salvar PIX</button>
+                                <button onClick={() => fetch(`${api}/api/settings/pix_key`, { method: 'PUT', headers: getAuthHeaders(), body: JSON.stringify({ value: pixKey }) }).then(() => showMessage("PIX Salvo!", "success"))} className="bg-green-700 hover:bg-green-600 text-white px-4 rounded font-bold transition">Salvar PIX</button>
                             </div>
                         </div>
                     </div>
@@ -1503,6 +1418,27 @@ const handleDeleteUser = async (id) => {
         )}
 
       </main>
+      {/* ÁREA DE IMPRESSÃO INVISÍVEL */}
+      {pdfData && (
+        <div style={{ position: 'absolute', top: -9999, left: -9999, width: '210mm' }}>
+          {/* Envolvemos em uma div com ID para o html2pdf achar */}
+          <div id="print-section">
+            <RegistrationForm 
+              formData={pdfData}
+              // Passamos funções vazias pois é apenas para visualização/impressão
+              handleChange={() => {}}
+              handleInscricaoChange={() => {}}
+              toggleCategoria={() => {}}
+              addInscricaoRow={() => {}}
+              removeInscricaoRow={() => {}}
+              handleSubmit={() => {}}
+              loading={false}
+              error=""
+              success={false}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 };
