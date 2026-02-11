@@ -3,11 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import { 
   LogOut, Calendar, MapPin, Upload, Plus, Edit3, AlertCircle, CheckCircle, 
   ArrowLeft, Trash2, RefreshCw, X, ImageIcon, Search, Users, 
-  ClipboardList, DollarSign, Wallet, Tag, Save, Printer, MessageCircle
+  ClipboardList, DollarSign, Wallet, Tag, Save, Printer, MessageCircle,
+  UserPlus // Import mantido para a função de inscrição direta
 } from 'lucide-react';
 import html2pdf from 'html2pdf.js';
 import RegistrationForm from './RegistrationForm';
-// Ajuste para pegar a URL string correta, e não a instância do Axios
 import api from '../api'; 
 
 const AdminDashboard = () => {
@@ -33,6 +33,12 @@ const AdminDashboard = () => {
     rg: '', cpf: '', medical_insurance: '', team: '', emergency_phone: '', address: '',
     modeloMoto: ''
   });
+
+  // --- NOVO: ESTADOS PARA INSCRIÇÃO DIRETA PELA ABA PILOTOS ---
+  const [userToRegister, setUserToRegister] = useState(null); 
+  const [targetStageId, setTargetStageId] = useState(''); 
+  const [targetCategories, setTargetCategories] = useState([]); 
+  const [targetPrice, setTargetPrice] = useState(0); 
 
   // --- ESTADOS DA PONTUAÇÃO ---
   const [selectedStage, setSelectedStage] = useState(null);
@@ -159,6 +165,58 @@ const AdminDashboard = () => {
           const res = await fetch(`${api}/api/categories`);
           if (res.ok) setCategoriesList(await res.json());
       } catch (error) { console.error(error); }
+  };
+
+  // --- FUNÇÕES DE INSCRIÇÃO DIRETA (USER PLUS) ---
+  const handleOpenUserRegistration = (user) => {
+    setUserToRegister(user);
+    setTargetStageId('');
+    setTargetCategories([]);
+    setTargetPrice(0);
+  };
+
+  const handleCloseUserRegistration = () => {
+    setUserToRegister(null);
+    setTargetStageId('');
+    setTargetCategories([]);
+    setTargetPrice(0);
+  };
+
+  const handleSaveUserToStage = async (e) => {
+    e.preventDefault();
+    if (!targetStageId) return showMessage("Selecione a etapa.", "error");
+    if (targetCategories.length === 0) return showMessage("Selecione ao menos uma categoria.", "error");
+
+    setLoading(true);
+    try {
+        const res = await fetch(`${api}/api/admin/registrations/manual`, {
+            method: 'POST',
+            headers: getAuthHeaders(),
+            body: JSON.stringify({
+                stage_id: targetStageId,
+                pilot_name: userToRegister.name,
+                pilot_number: userToRegister.bike_number,
+                modelo_moto: userToRegister.modelo_moto || userToRegister.modeloMoto,
+                cpf: userToRegister.cpf,
+                phone: userToRegister.phone,
+                categories: targetCategories.join(', '),
+                total_price: targetPrice
+            })
+        });
+
+        const data = await res.json();
+
+        if (res.ok) {
+            showMessage(`Sucesso! ${userToRegister.name} inscrito.`, "success");
+            handleCloseUserRegistration();
+        } else {
+            showMessage(data.error || "Erro ao inscrever.", "error");
+        }
+    } catch (error) {
+        showMessage("Erro de conexão.", "error");
+    } finally {
+        setLoading(false);
+    }
   };
 
   const handleSaveCategory = async (e) => {
@@ -450,9 +508,14 @@ const AdminDashboard = () => {
       } catch (error) { showMessage("Erro ao atualizar status", "error"); }
   };
 
-  // --- NOVA FUNÇÃO DE GERAR PDF (IGUAL À FICHA FÍSICA) ---
+  // --- NOVA FUNÇÃO DE GERAR PDF (CORRIGIDA) ---
   const handleGeneratePDF = (reg) => {
-    // 1. Mapeia dados do DB para o formato da ficha visual
+    // 1. TRATAMENTO DE DADOS: Transforma string de categorias em array
+    const categoriasArray = reg.categories 
+        ? reg.categories.split(',').map(c => c.trim()).filter(Boolean) 
+        : [];
+
+    // 2. Mapeia dados do DB para o formato da ficha visual
     const formattedData = {
       chipNumber: reg.chip_id ? String(reg.chip_id) : '',
       equipe: reg.team || '',
@@ -461,24 +524,21 @@ const AdminDashboard = () => {
       nomeCompleto: reg.pilot_name || '',
       rg: reg.rg || '',
       cpf: reg.cpf || '',
-      convenioMedico: reg.medical_plan || '',
+      convenioMedico: reg.medical_plan || reg.medical_insurance || '', // Fallback para nomes de campo diferentes
       endereco: reg.address || '',
       tel: reg.phone || '',
       telUrgencia: reg.emergency_phone || '',
-      totalCategorias: reg.categories ? reg.categories.split(',').filter(Boolean).length : 0,
+      totalCategorias: categoriasArray.length,
       
-      // Cria a linha de inscrição com os dados da moto
+      // AQUI ESTAVA O PROBLEMA: Agora preenchemos o array de categorias
       inscricoes: [
         { 
           id: 1, 
-          // Categorias vem como string "MX1, MX2", aqui mantemos vazio pois não temos mapeamento numérico na DB
-          // O usuário pode marcar a caneta ou você pode implementar lógica futura
-          categorias: [], 
-          moto: reg.modelo_moto || '', 
+          // Preenche com o array que acabamos de criar
+          categorias: categoriasArray, 
+          moto: reg.modelo_moto || reg.modeloMoto || '', 
           numero: reg.pilot_number || '' 
-        },
-        // Linha extra vazia
-        { id: 2, categorias: [], moto: '', numero: '' }
+        }
       ],
       localData: `São Paulo-SP, ${new Date().toLocaleDateString('pt-BR')}`,
       termoAceito: true
@@ -499,7 +559,7 @@ const AdminDashboard = () => {
         margin:       0,
         filename:     `Ficha_${reg.pilot_name.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.pdf`,
         image:        { type: 'jpeg', quality: 0.98 },
-        html2canvas:  { scale: 2, logging: false, useCORS: true }, // useCORS é vital para imagens
+        html2canvas:  { scale: 2, logging: false, useCORS: true }, 
         jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
       };
 
@@ -1212,6 +1272,89 @@ const AdminDashboard = () => {
         {/* --- ABA PILOTOS (USUÁRIOS) COM BUSCA --- */}
         {activeTab === 'users' && (
           <div className="animate-fade-in space-y-6">
+             
+             {/* --- MODAL DE INSCRIÇÃO RÁPIDA DE PILOTO --- */}
+            {userToRegister && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+                    <div className="bg-neutral-800 border border-green-600 rounded-xl w-full max-w-lg shadow-2xl animate-fade-in">
+                        <div className="flex justify-between items-center p-6 border-b border-neutral-700 bg-neutral-900 rounded-t-xl">
+                            <div>
+                                <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                                    <UserPlus className="text-green-500"/> Inscrever Piloto
+                                </h3>
+                                <p className="text-sm text-gray-400 mt-1">Inscrevendo: <span className="text-white font-bold">{userToRegister.name}</span></p>
+                            </div>
+                            <button onClick={handleCloseUserRegistration} className="text-gray-400 hover:text-white"><X size={24}/></button>
+                        </div>
+                        
+                        <form onSubmit={handleSaveUserToStage} className="p-6 space-y-4">
+                            {/* Seleção de Etapa */}
+                            <div>
+                                <label className="text-xs text-gray-500 font-bold uppercase mb-1 block">Selecione a Etapa</label>
+                                <select 
+                                    className="w-full bg-neutral-900 border border-neutral-700 rounded p-3 text-white focus:border-green-500"
+                                    value={targetStageId}
+                                    onChange={(e) => setTargetStageId(e.target.value)}
+                                    required
+                                >
+                                    <option value="">-- Selecione --</option>
+                                    {stages.map(s => (
+                                        <option key={s.id} value={s.id}>{s.name} - {new Date(s.date).toLocaleDateString('pt-BR')}</option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            {/* Seleção de Categorias */}
+                            <div>
+                                <label className="text-xs text-gray-500 font-bold uppercase mb-2 block">Categorias</label>
+                                <div className="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto bg-neutral-900 p-3 rounded border border-neutral-700">
+                                    {categoriesList.map(cat => (
+                                        <label key={cat.id} className="flex items-center gap-2 text-sm text-gray-300 cursor-pointer hover:text-white">
+                                            <input 
+                                                type="checkbox" 
+                                                className="accent-green-500 w-4 h-4"
+                                                checked={targetCategories.includes(cat.name)}
+                                                onChange={(e) => {
+                                                    const isChecked = e.target.checked;
+                                                    setTargetCategories(prev => 
+                                                        isChecked ? [...prev, cat.name] : prev.filter(c => c !== cat.name)
+                                                    );
+                                                }}
+                                            />
+                                            {cat.name}
+                                        </label>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Valor e Infos Fixas */}
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="text-xs text-gray-500 font-bold uppercase mb-1 block">Moto (#)</label>
+                                    <input className="w-full bg-neutral-900/50 border border-neutral-800 rounded p-2 text-gray-400" value={`${userToRegister.modelo_moto || ''} #${userToRegister.bike_number || ''}`} disabled />
+                                </div>
+                                <div>
+                                    <label className="text-xs text-green-500 font-bold uppercase mb-1 block">Valor a Cobrar (R$)</label>
+                                    <input 
+                                        type="number" 
+                                        className="w-full bg-neutral-900 border border-neutral-700 rounded p-2 text-green-500 font-bold focus:border-green-500"
+                                        value={targetPrice}
+                                        onChange={(e) => setTargetPrice(parseFloat(e.target.value) || 0)}
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="pt-4 flex justify-end gap-3 border-t border-neutral-700 mt-4">
+                                <button type="button" onClick={handleCloseUserRegistration} className="px-4 py-2 rounded bg-neutral-700 text-white font-bold text-sm">Cancelar</button>
+                                <button type="submit" disabled={loading} className="px-6 py-2 rounded bg-green-600 hover:bg-green-500 text-white font-bold text-sm uppercase shadow-lg">
+                                    {loading ? '...' : 'Confirmar Inscrição'}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+             
              {editingUser && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
                     <div className="bg-[#111] border border-gray-800 rounded-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto shadow-2xl">
@@ -1400,6 +1543,13 @@ const AdminDashboard = () => {
 
                                     {/* Coluna: Ações */}
                                     <td className="p-4 text-right flex justify-end gap-2">
+                                        <button 
+                                            onClick={() => handleOpenUserRegistration(user)} 
+                                            className="p-2 rounded text-gray-400 hover:text-green-500 hover:bg-green-500/10" 
+                                            title="Inscrever em Etapa"
+                                        >
+                                            <UserPlus size={16}/>
+                                        </button>
                                         <button onClick={() => handleEditUserClick(user)} className="p-2 rounded text-gray-400 hover:text-yellow-400 hover:bg-yellow-400/10">
                                             <Edit3 size={16}/>
                                         </button>

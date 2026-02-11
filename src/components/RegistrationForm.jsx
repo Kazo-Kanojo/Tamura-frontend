@@ -12,29 +12,28 @@ const RegistrationFormPdf = ({ formData }) => {
 
   const styles = {
     container: { 
-      backgroundColor: colors.white, // Fundo branco geral
+      backgroundColor: colors.white,
       display: 'flex',
-      justifyContent: 'center', // Centraliza horizontalmente
-      alignItems: 'flex-start', // Alinha ao topo
-      padding: '20px', // MARGEM DE SEGURANÇA EXTERNA (Para não colar na borda da tela/PDF)
+      justifyContent: 'center',
+      alignItems: 'flex-start',
+      padding: '20px',
       width: '100%',
-      minHeight: '100vh', // Garante altura total
+      minHeight: '100vh',
       boxSizing: 'border-box'
     },
     paper: { 
       backgroundColor: colors.white, 
       color: colors.black, 
       width: '100%',
-      maxWidth: '800px', // TRAVA O TAMANHO COMO UMA FOLHA A4 (Evita esticar demais)
+      maxWidth: '800px', // A4 Aproximado
       border: 'none',
       boxShadow: 'none',
-      padding: '30px', // MARGEM DE SEGURANÇA INTERNA (O texto não cola na borda do papel)
+      padding: '30px',
       fontFamily: 'Arial, sans-serif',
       fontSize: '12px',
       boxSizing: 'border-box'
     },
     
-    // --- SEUS AJUSTES DE TEXTO (MANTIDOS) ---
     labelStyle: {
       fontWeight: 'bold', 
       whiteSpace: 'nowrap', 
@@ -47,8 +46,6 @@ const RegistrationFormPdf = ({ formData }) => {
       display: 'flex',
       alignItems: 'flex-end', 
       borderBottom: 'none', 
-      
-      // MANTENHA SEUS AJUSTES AQUI SE PRECISAR
       minHeight: '25px',       
       paddingBottom: '2px',    
     },
@@ -63,8 +60,6 @@ const RegistrationFormPdf = ({ formData }) => {
       overflowWrap: 'anywhere',
       marginBottom: '0px'
     },
-    // -----------------------------------------------------------
-
     emptyLineContainer: {
       flexGrow: 1,
       borderBottom: `1px solid ${colors.black}`,
@@ -79,17 +74,17 @@ const RegistrationFormPdf = ({ formData }) => {
     },
     sectionBorder: {
       border: `2px solid ${colors.black}`,
-      padding: '1rem', // Aumentei um pouco o padding interno do quadro para ficar mais bonito
+      padding: '1rem',
       marginBottom: '1rem'
     },
     termBox: {
       border: `1px solid ${colors.black}`,
-      padding: '1rem', // Mais respiro no texto do termo
+      padding: '1rem',
       backgroundColor: '#f9fafb',
       fontSize: '10px', 
       textAlign: 'justify',
       marginBottom: '1rem',
-      lineHeight: '1.3' // Melhora a leitura do texto pequeno
+      lineHeight: '1.3'
     },
     boxContainer: {
         borderBottom: `2px solid ${colors.black}`,
@@ -98,6 +93,15 @@ const RegistrationFormPdf = ({ formData }) => {
         justifyContent: 'center',
         paddingBottom: '2px',
         minHeight: '30px'
+    },
+    // Estilo para a "Caixinha" de categoria
+    categoryBadge: {
+        padding: '4px 8px',
+        fontSize: '11px',
+        fontWeight: 'bold',
+        backgroundColor: '#f3f4f6',
+        borderRadius: '4px',
+        textTransform: 'uppercase'
     }
   };
 
@@ -107,7 +111,7 @@ const RegistrationFormPdf = ({ formData }) => {
       display: 'flex',
       alignItems: 'flex-end', 
       width: width === '100%' ? '100%' : width,
-      marginRight: '15px' // Aumentei um pouco o espaço entre campos laterais
+      marginRight: '15px'
     };
 
     const hasValue = value && String(value).trim() !== '';
@@ -183,10 +187,11 @@ const RegistrationFormPdf = ({ formData }) => {
           <Field label="Importante Tel. de acompanhantes em caso de urgência" value={formData.telUrgencia} width="60%" />
         </div>
 
-        {/* --- QUADRO DE CATEGORIAS --- */}
+        {/* --- QUADRO DE CATEGORIAS (CORRIGIDO PARA CABER TUDO) --- */}
         <div style={{ ...styles.sectionBorder, marginTop: '20px' }}>
           
-          <div style={{ display: 'flex', alignItems: 'center', marginBottom: '10px', color: colors.pink, fontWeight: 'bold' }}>
+          {/* Cabeçalho do Quadro */}
+          <div style={{ display: 'flex', alignItems: 'center', marginBottom: '15px', color: colors.pink, fontWeight: 'bold' }}>
             <span>Total de categorias irá participar (</span>
             <div style={{ 
                 ...styles.boxContainer,
@@ -195,59 +200,53 @@ const RegistrationFormPdf = ({ formData }) => {
                 color: colors.black,
                 minHeight: '20px'
             }}>
-              <span style={{ lineHeight: '1.0', fontSize: '16px', display: 'block' }}>
+              <span style={{ lineHeight: '1.0', fontSize: '16px', display: 'block', paddingBottom: '4px' }}>
                 {formData.totalCategorias}
               </span>
             </div>
             <span>)</span>
           </div>
 
+          {/* Loop de Inscrições */}
           {formData.inscricoes.map((item, index) => (
             <div key={item.id || index} style={{ 
                 display: 'flex', 
-                justifyContent: 'space-between', 
-                alignItems: 'flex-end', 
-                marginBottom: '10px',
-                borderBottom: index === 0 ? '1px dashed #ccc' : 'none',
-                paddingBottom: '5px'
+                flexDirection: 'column', // Mudado para coluna para melhor organização
+                marginBottom: '15px',
+                borderBottom: index === formData.inscricoes.length - 1 ? 'none' : '1px dashed #ccc',
+                paddingBottom: '10px'
             }}>
               
-              {/* Checkboxes Estáticos */}
-              <div style={{ display: 'flex', gap: '15px' }}>
-                {[1, 2, 3, 4, 5, 6].map(num => {
-                  const isSelected = item.categorias.includes(num);
-                  return (
-                    <div key={num} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                      <span style={{ fontSize: '10px', fontWeight: 'bold' }}>{num}ª</span>
-                      <div style={{ 
-                          width: '30px', 
-                          borderBottom: `1px solid ${colors.black}`, 
-                          height: '20px', 
-                          display: 'flex',
-                          alignItems: 'flex-end',
-                          justifyContent: 'center'
-                      }}>
-                          {isSelected && <span style={{ fontSize: '16px', lineHeight: '1', fontWeight: 'bold', marginBottom: '10px' }}>X</span>}
-                      </div>
+              {/* Linha Moto e Número (Topo) */}
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '20px', marginBottom: '10px' }}>
+                <div style={{ display: 'flex', alignItems: 'flex-end' }}>
+                    <span style={{ color: colors.pink, fontWeight: 'bold', marginRight: '5px', fontSize: '12px' }}>MOTO</span>
+                    <div style={{ borderBottom: `1px solid ${colors.pink}`, minWidth: '150px', textAlign: 'center' }}>
+                        <span style={{ fontWeight: 'bold', fontSize: '14px', paddingBottom: '7px' }}>{item.moto}</span>
                     </div>
-                  );
-                })}
+                </div>
+                <div style={{ display: 'flex', alignItems: 'flex-end' }}>
+                    <span style={{ color: colors.pink, fontWeight: 'bold', marginRight: '5px', fontSize: '12px' }}>#</span>
+                    <div style={{ borderBottom: `1px solid ${colors.pink}`, width: '60px', textAlign: 'center' }}>
+                        <span style={{ fontWeight: 'bold', fontSize: '16px',  paddingBottom: '7px' }}>{item.numero}</span>
+                    </div>
+                </div>
               </div>
 
-              {/* Moto e Número */}
-              <div style={{ display: 'flex', gap: '20px' }}>
-                <div style={{ display: 'flex', alignItems: 'flex-end' }}>
-                    <span style={{ color: colors.pink, fontWeight: 'bold', marginRight: '5px', marginBottom: '10px', fontSize: '12px' }}>MOTO</span>
-                    <div style={{ borderBottom: `1px solid ${colors.pink}`, width: '120px', textAlign: 'center' }}>
-                        <span style={{ fontWeight: 'bold', fontSize: '13px' }}>{item.moto}</span>
-                    </div>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'flex-end' }}>
-                    <span style={{ color: colors.pink, fontWeight: 'bold', marginRight: '5px', marginBottom: '10px', fontSize: '12px' }}>#</span>
-                    <div style={{ borderBottom: `1px solid ${colors.pink}`, width: '50px', textAlign: 'center' }}>
-                        <span style={{ fontWeight: 'bold', fontSize: '14px' }}>{item.numero}</span>
-                    </div>
-                </div>
+              {/* Lista Dinâmica de Categorias (Wrap) */}
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center' }}>
+                 <span style={{ fontSize: '12px', fontWeight: 'bold', marginRight: '5px' }}>Categorias:</span>
+                 
+                 {/* Se tiver categorias, lista elas. Se não, mostra linha vazia */}
+                 {item.categorias && item.categorias.length > 0 ? (
+                    item.categorias.map((catName, idx) => (
+                        <div key={idx} style={styles.categoryBadge}>
+                            {catName}
+                        </div>
+                    ))
+                 ) : (
+                    <div style={{ ...styles.emptyLineContainer, width: '100%' }}></div>
+                 )}
               </div>
 
             </div>
