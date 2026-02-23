@@ -271,9 +271,8 @@ const RegistrationFormPdf = ({ formData }) => {
         {/* --- RODAPÉ --- */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginTop: '30px', marginBottom: '30px' }}>
           <div style={{ width: '40%', display: 'flex', alignItems: 'flex-end' }}>
-            <span style={{ whiteSpace: 'nowrap', marginRight: '5px', marginBottom: '7px', fontSize: '12px', fontWeight: 'bold' }}>São Paulo-SP</span>
             <div style={{ flexGrow: 1, display: 'flex', alignItems: 'flex-end', borderBottom: 'none' }}>
-                 <span style={{ fontWeight: 'bold', width: '100%', textAlign: 'center' }}>{formData.localData}</span>
+                 <span style={{ fontWeight: 'bold', width: '100%', textAlign: 'center' }}>São paulo, ___/___/____</span>
             </div>
           </div>
 
