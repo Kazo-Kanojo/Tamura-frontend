@@ -98,22 +98,35 @@ const UserDashboard = () => {
 
   const fetchData = async (userId, token, initialUser) => {
     setLoading(true);
-    let currentUserData = initialUser;
     try {
-      const userRes = await fetch(`${API_URL}/api/users/${userId}`, { headers: getAuthHeaders(token) });
-      if (userRes.ok) {
-          const updatedUser = await userRes.json();
-          currentUserData = { ...updatedUser, token: initialUser.token };
-          setUser(currentUserData); localStorage.setItem('user', JSON.stringify(currentUserData));
-      } else if (userRes.status === 403 || userRes.status === 401) {
-          localStorage.removeItem('user'); navigate("/login"); return;
-      }
-      const stagesRes = await fetch(`${API_URL}/api/stages`); setStages(await stagesRes.json());
-      const myRegRes = await fetch(`${API_URL}/api/registrations/user/${userId}`, { headers: getAuthHeaders(token) }); setMyRegistrations(await myRegRes.json()); 
-      const pixRes = await fetch(`${API_URL}/api/settings/pix_key`); const pixData = pixRes.ok ? await pixRes.json() : { value: '' }; setPixKey(pixData.value || '');
-      const batchRes = await fetch(`${API_URL}/api/settings/batch_name`); const batchData = batchRes.ok ? await batchRes.json() : { value: '' }; setBatchName(batchData.value || 'Lote Padrão');
-    } catch (error) { console.error(error); } finally { setLoading(false); }
-  };
+        // Apenas UMA requisição à API
+        const response = await fetch(`${API_URL}/api/dashboard-data`, { 
+            headers: getAuthHeaders(token) 
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            
+            // Atualiza o utilizador garantindo que mantém o token
+            const currentUserData = { ...data.user, token };
+            setUser(currentUserData); 
+            localStorage.setItem('user', JSON.stringify(currentUserData));
+
+            // Distribui os restantes dados pelos estados
+            setStages(data.stages);
+            setMyRegistrations(data.registrations);
+            setPixKey(data.pix_key || '');
+            setBatchName(data.batch_name || 'Lote Padrão');
+        } else if (response.status === 403 || response.status === 401) {
+            localStorage.removeItem('user'); 
+            navigate("/login"); 
+        }
+    } catch (error) { 
+        console.error("Erro ao carregar dados do dashboard:", error); 
+    } finally { 
+        setLoading(false); 
+    }
+};
 
   const handleCopyPix = () => { if (pixKey) { navigator.clipboard.writeText(pixKey); alert("Chave PIX copiada!"); } };
 
