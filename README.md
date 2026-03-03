@@ -1,16 +1,74 @@
-# React + Vite
+# 🏆 Projeto Tamura
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+O **Tamura** é um sistema completo desenvolvido para o gerenciamento de eventos, usuários e visualização de tabelas de classificação (standings). A aplicação é dividida em uma interface de usuário moderna (Frontend) e uma API robusta (Backend), garantindo alta performance e segurança.
 
-Currently, two official plugins are available:
+---
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## 🚀 Tecnologias Utilizadas e Infraestrutura
 
-## React Compiler
+A infraestrutura do projeto foi pensada para ser ágil e escalável, utilizando as seguintes tecnologias e serviços:
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+### 📱 Frontend (Vercel)
+- **React.js** com **Vite** para um build rápido e otimizado.
+- **Tailwind CSS** para estilização responsiva.
+- **PWA (Progressive Web App)** via Workbox, permitindo instalação no dispositivo e uso offline.
+- **Hospedagem:** Vercel (com configuração `vercel.json` para roteamento SPA).
 
-## Expanding the ESLint configuration
+### ⚙️ Backend (Hostinger)
+- **Node.js** para a criação da API REST.
+- **Hospedagem:** Hostinger (servidor VPS/Web).
+- **Uploads:** Gerenciamento nativo de arquivos locais (armazenamento de imagens e leitura de planilhas CSV na pasta `/uploads`).
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+### 🗄️ Banco de Dados (Neon)
+- **Neon (PostgreSQL Serverless)**: Banco de dados relacional em nuvem, oferecendo alta disponibilidade.
+
+---
+
+## 📁 Estrutura do Sistema
+
+O sistema atende a diferentes perfis de acesso:
+- **Administradores:** Acesso ao `AdminDashboard` para criar eventos, gerenciar usuários e fazer upload de planilhas de resultados.
+- **Usuários:** Acesso ao `UserDashboard` para visualizar seus dados.
+- **Público/Geral:** Visualização de Eventos (`EventCard`) e Tabelas de Classificação (`Standings`).
+
+---
+
+## 🛠️ Como executar o projeto localmente
+
+Para rodar o projeto na sua máquina, você precisará configurar o Backend e o Frontend separadamente. Certifique-se de ter o [Node.js](https://nodejs.org/) instalado.
+
+### 1. Configurando o Backend (API)
+
+1. Entre na pasta do backend:
+   ```bash
+      cd tamura-backend
+
+2. Instale as dependências:
+   ```bash
+      npm install
+
+3. Crie um arquivo .env na raiz do backend (use o .env.example como base) e adicione a URL do banco Neon:
+
+4. "Ligue a api"
+    ```bash
+       npx nodemon server.js
+   
+### 2. Configurando o Frontend (Interface)
+   
+1.Entre na pasta do projeto
+   ```bash
+      cd frontend
+```
+
+2. INstale as dependencias:
+   ```bash
+      npm install
+
+3. Configure as variaveis de ambiente:
+   ```bash
+      cd tamura-backend
+
+4. Inicie o projeto:
+   ```bash
+      npm run dev
+
